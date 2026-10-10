@@ -439,14 +439,6 @@ def create_admin_account(username, password):
     finally:
         connection.close()
 
-# Create the Render admin account from environment variables
-import os
-
-admin_username = os.getenv("ADMIN_USERNAME")
-admin_password = os.getenv("ADMIN_PASSWORD")
-
-if admin_username and admin_password:
-    create_admin_account(admin_username, admin_password)
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -2710,6 +2702,14 @@ def placement_page():
         connection.close()
 
 initialize_database()
+
+# Create or update the Render admin account
+admin_username = os.getenv("ADMIN_USERNAME")
+admin_password = os.getenv("ADMIN_PASSWORD")
+
+if admin_username and admin_password:
+    create_admin_account(admin_username, admin_password)
+
 if __name__ == "__main__":
     
 
