@@ -1,0 +1,915 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance Management</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 24px;
+            background: #f4f7fb;
+            color: #222;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        h1, h2 {
+            color: #1e293b;
+        }
+
+        /* Page heading and Dashboard button */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .page-header h1 {
+            margin: 0 0 10px;
+        }
+
+        .page-header p {
+            margin: 0;
+        }
+
+        .dashboard-btn {
+            display: inline-block;
+            padding: 10px 18px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        .dashboard-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .section {
+            background: white;
+            padding: 22px;
+            margin-bottom: 24px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-top: 18px;
+        }
+
+        .summary-card {
+            padding: 20px;
+            border-radius: 10px;
+            background: #eef2ff;
+            border-left: 5px solid #4f46e5;
+        }
+
+        .summary-card h3 {
+            margin: 0 0 10px;
+            font-size: 14px;
+            color: #475569;
+        }
+
+        .summary-card p {
+            margin: 0;
+            font-size: 28px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 16px 0;
+        }
+
+        input, select, button {
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        button {
+            border: none;
+            background: #4f46e5;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #3730a3;
+        }
+
+        .present-btn {
+            background: #16a34a;
+        }
+
+        .present-btn:hover {
+            background: #15803d;
+        }
+
+        .absent-btn {
+            background: #dc2626;
+        }
+
+        .absent-btn:hover {
+            background: #b91c1c;
+        }
+
+        .secondary-btn {
+            background: #64748b;
+        }
+
+        .secondary-btn:hover {
+            background: #475569;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        th {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .message {
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        .success {
+            color: #15803d;
+        }
+
+        .error {
+            color: #dc2626;
+        }
+
+        .muted {
+            color: #64748b;
+        }
+
+        .percentage {
+            font-weight: bold;
+        }
+
+        .good {
+            color: #15803d;
+        }
+
+        .warning {
+            color: #d97706;
+        }
+
+        .poor {
+            color: #dc2626;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+
+            .section {
+                padding: 15px;
+            }
+
+            .page-header {
+                align-items: flex-start;
+            }
+
+            .page-header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <!-- PAGE HEADER WITH DASHBOARD BUTTON -->
+    <div class="page-header">
+        <div>
+            <h1>Student Attendance Management</h1>
+            <p class="muted">
+                Manage daily attendance and view semester, fortnightly, and monthly reports.
+            </p>
+        </div>
+
+        <a href="{{ url_for('index') }}" class="dashboard-btn">
+            🏠 Dashboard
+        </a>
+    </div>
+
+    <!-- SEMESTER SUMMARY -->
+    <section class="section">
+        <div class="section-header">
+            <div>
+                <h2>Semester Attendance Summary</h2>
+                <p id="semesterDates" class="muted">
+                    Loading semester dates...
+                </p>
+            </div>
+
+            <button onclick="loadAllReports()">Refresh Reports</button>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h3>Total Students</h3>
+                <p id="totalStudents">0</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Attendance Records</h3>
+                <p id="totalRecords">0</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Present</h3>
+                <p id="totalPresent">0</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Absent</h3>
+                <p id="totalAbsent">0</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Overall Attendance</h3>
+                <p id="overallPercentage">0%</p>
+            </div>
+        </div>
+
+        <div id="semesterMessage" class="message"></div>
+    </section>
+
+    <!-- DAILY ATTENDANCE -->
+    <section class="section">
+        <h2>Mark Daily Attendance</h2>
+
+        <div class="controls">
+            <label for="attendanceDate">Select date:</label>
+            <input type="date" id="attendanceDate">
+
+            <button onclick="loadAttendance()">Load Attendance</button>
+
+            <button class="present-btn" onclick="markAll('Present')">
+                Mark All Present
+            </button>
+
+            <button class="absent-btn" onclick="markAll('Absent')">
+                Mark All Absent
+            </button>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h3>Present Today</h3>
+                <p id="todayPresent">0</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Absent Today</h3>
+                <p id="todayAbsent">0</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Not Marked</h3>
+                <p id="todayUnmarked">0</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Attendance Status</th>
+                    </tr>
+                </thead>
+
+                <tbody id="attendanceTableBody">
+                    <tr>
+                        <td colspan="3">Loading students...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="controls">
+            <button onclick="saveAttendance()">Save Attendance</button>
+        </div>
+
+        <div id="attendanceMessage" class="message"></div>
+    </section>
+
+    <!-- FORTNIGHTLY REPORTS -->
+    <section class="section">
+        <h2>Fortnightly Attendance Reports</h2>
+
+        <p class="muted">
+            Attendance summaries for completed 15-day periods.
+        </p>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Period</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Present</th>
+                        <th>Absent</th>
+                        <th>Recorded</th>
+                        <th>Attendance %</th>
+                    </tr>
+                </thead>
+
+                <tbody id="fortnightlyTableBody">
+                    <tr>
+                        <td colspan="7">Loading fortnightly reports...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- MONTHLY REPORTS -->
+    <section class="section">
+        <h2>Monthly Attendance Reports</h2>
+
+        <p class="muted">
+            Attendance summaries for completed months in the semester.
+        </p>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Present</th>
+                        <th>Absent</th>
+                        <th>Recorded</th>
+                        <th>Attendance %</th>
+                    </tr>
+                </thead>
+
+                <tbody id="monthlyTableBody">
+                    <tr>
+                        <td colspan="7">Loading monthly reports...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- STUDENT-WISE REPORT -->
+    <section class="section">
+        <h2>Student-wise Semester Attendance</h2>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Present Days</th>
+                        <th>Absent Days</th>
+                        <th>Recorded Days</th>
+                        <th>Attendance %</th>
+                    </tr>
+                </thead>
+
+                <tbody id="studentReportsTableBody">
+                    <tr>
+                        <td colspan="6">Loading student reports...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+
+<script>
+    const attendanceDateInput = document.getElementById("attendanceDate");
+
+    let currentStudents = [];
+
+    // Use the local date, not the UTC date.
+    function getLocalDateString() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+    }
+
+    function showMessage(elementId, message, type = "") {
+        const element = document.getElementById(elementId);
+        element.textContent = message;
+        element.className = "message " + type;
+    }
+
+    function escapeHTML(value) {
+        return String(value ?? "").replace(/[&<>"']/g, character => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[character]);
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return "—";
+
+        const parts = dateString.split("-");
+        if (parts.length !== 3) return dateString;
+
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+
+    function percentageClass(value) {
+        if (value >= 75) return "good";
+        if (value >= 60) return "warning";
+        return "poor";
+    }
+
+    // -------------------------------
+    // LOAD DAILY ATTENDANCE
+    // -------------------------------
+    async function loadAttendance() {
+        const date = attendanceDateInput.value;
+
+        if (!date) {
+            showMessage(
+                "attendanceMessage",
+                "Please select a date.",
+                "error"
+            );
+            return;
+        }
+
+        const tbody = document.getElementById("attendanceTableBody");
+        tbody.innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
+
+        try {
+            const response = await fetch(
+                `/api/attendance?date=${encodeURIComponent(date)}`
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Could not load attendance.");
+            }
+
+            currentStudents = data.students || [];
+
+            if (currentStudents.length === 0) {
+                tbody.innerHTML =
+                    '<tr><td colspan="3">No students found.</td></tr>';
+                updateSummary();
+                return;
+            }
+
+            tbody.innerHTML = currentStudents.map(student => {
+                const status = student.status || "";
+                const studentId = Number(student.id ?? student.student_id);
+
+                return `
+                    <tr data-student-id="${studentId}">
+                        <td>${escapeHTML(student.id ?? student.student_id)}</td>
+                        <td>${escapeHTML(student.name)}</td>
+                        <td>
+                            <select class="attendance-status"
+                                    aria-label="Attendance status for ${escapeHTML(student.name)}">
+                                <option value="" ${status === "" ? "selected" : ""}>
+                                    Not Marked
+                                </option>
+                                <option value="Present"
+                                    ${status === "Present" ? "selected" : ""}>
+                                    Present
+                                </option>
+                                <option value="Absent"
+                                    ${status === "Absent" ? "selected" : ""}>
+                                    Absent
+                                </option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+
+            tbody.querySelectorAll(".attendance-status").forEach(select => {
+                select.addEventListener("change", updateSummary);
+            });
+
+            updateSummary();
+            showMessage("attendanceMessage", "", "");
+        } catch (error) {
+            tbody.innerHTML =
+                '<tr><td colspan="3">Unable to load attendance.</td></tr>';
+
+            showMessage("attendanceMessage", error.message, "error");
+        }
+    }
+
+    // -------------------------------
+    // DAILY SUMMARY
+    // -------------------------------
+    function updateSummary() {
+        const selects = document.querySelectorAll(".attendance-status");
+
+        let present = 0;
+        let absent = 0;
+        let unmarked = 0;
+
+        selects.forEach(select => {
+            if (select.value === "Present") {
+                present++;
+            } else if (select.value === "Absent") {
+                absent++;
+            } else {
+                unmarked++;
+            }
+        });
+
+        document.getElementById("todayPresent").textContent = present;
+        document.getElementById("todayAbsent").textContent = absent;
+        document.getElementById("todayUnmarked").textContent = unmarked;
+    }
+
+    // -------------------------------
+    // MARK ALL PRESENT OR ABSENT
+    // -------------------------------
+    function markAll(status) {
+        document.querySelectorAll(".attendance-status").forEach(select => {
+            select.value = status;
+        });
+
+        updateSummary();
+    }
+
+    // -------------------------------
+    // SAVE DAILY ATTENDANCE
+    // -------------------------------
+    async function saveAttendance() {
+        const date = attendanceDateInput.value;
+
+        if (!date) {
+            showMessage(
+                "attendanceMessage",
+                "Please select a date.",
+                "error"
+            );
+            return;
+        }
+
+        const rows = document.querySelectorAll(
+            "#attendanceTableBody tr[data-student-id]"
+        );
+
+        if (rows.length === 0) {
+            showMessage(
+                "attendanceMessage",
+                "No students to save.",
+                "error"
+            );
+            return;
+        }
+
+        const records = [];
+
+        for (const row of rows) {
+            const studentId = Number(row.dataset.studentId);
+            const status = row.querySelector(".attendance-status").value;
+
+            if (!status) {
+                showMessage(
+                    "attendanceMessage",
+                    "Please mark every student's attendance before saving.",
+                    "error"
+                );
+                return;
+            }
+
+            records.push({
+                student_id: studentId,
+                status: status
+            });
+        }
+
+        try {
+            const response = await fetch("/api/attendance", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    date: date,
+                    records: records
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to save attendance.");
+            }
+
+            showMessage(
+                "attendanceMessage",
+                `Attendance saved successfully. Present: ${data.present}, Absent: ${data.absent}.`,
+                "success"
+            );
+
+            await loadAttendance();
+            await loadAllReports();
+        } catch (error) {
+            showMessage("attendanceMessage", error.message, "error");
+        }
+    }
+
+    // -------------------------------
+    // SEMESTER SUMMARY
+    // API: GET /api/attendance/semester
+    // -------------------------------
+    async function loadSemesterSummary() {
+        const tbody = document.getElementById("studentReportsTableBody");
+
+        try {
+            const response = await fetch("/api/attendance/semester");
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.error || "Could not load semester summary."
+                );
+            }
+
+            const students = data.students || [];
+
+            document.getElementById("semesterDates").textContent =
+                `Semester: ${formatDate(data.semester_start)} to ${formatDate(data.semester_end)}`;
+
+            const totalStudents = students.length;
+
+            const totalPresent = students.reduce(
+                (sum, student) => sum + Number(student.present_days || 0),
+                0
+            );
+
+            const totalRecords = students.reduce(
+                (sum, student) => sum + Number(student.recorded_days || 0),
+                0
+            );
+
+            const totalAbsent = totalRecords - totalPresent;
+
+            const overallPercentage = totalRecords > 0
+                ? (totalPresent / totalRecords) * 100
+                : 0;
+
+            document.getElementById("totalStudents").textContent =
+                totalStudents;
+
+            document.getElementById("totalRecords").textContent =
+                totalRecords;
+
+            document.getElementById("totalPresent").textContent =
+                totalPresent;
+
+            document.getElementById("totalAbsent").textContent =
+                totalAbsent;
+
+            document.getElementById("overallPercentage").textContent =
+                `${overallPercentage.toFixed(2)}%`;
+
+            showMessage(
+                "semesterMessage",
+                totalRecords === 0
+                    ? "No attendance records have been saved for this semester yet."
+                    : "",
+                totalRecords === 0 ? "muted" : ""
+            );
+
+            if (students.length === 0) {
+                tbody.innerHTML =
+                    '<tr><td colspan="6">No students found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = students.map(student => {
+                const present = Number(student.present_days || 0);
+                const recorded = Number(student.recorded_days || 0);
+                const absent = Math.max(0, recorded - present);
+
+                const percentage = recorded > 0
+                    ? Number(
+                        student.attendance_percentage ??
+                        (present / recorded * 100)
+                    )
+                    : null;
+
+                const percentageText = percentage === null
+                    ? "No records"
+                    : `${percentage.toFixed(2)}%`;
+
+                return `
+                    <tr>
+                        <td>${escapeHTML(student.student_id)}</td>
+                        <td>${escapeHTML(student.name)}</td>
+                        <td>${present}</td>
+                        <td>${absent}</td>
+                        <td>${recorded}</td>
+                        <td class="percentage ${
+                            percentage === null
+                                ? ""
+                                : percentageClass(percentage)
+                        }">${percentageText}</td>
+                    </tr>
+                `;
+            }).join("");
+        } catch (error) {
+            tbody.innerHTML =
+                '<tr><td colspan="6">Could not load student attendance.</td></tr>';
+
+            showMessage("semesterMessage", error.message, "error");
+        }
+    }
+
+    // -------------------------------
+    // FORTNIGHTLY AND MONTHLY REPORTS
+    // API: GET /api/attendance/reports?type=...
+    // -------------------------------
+    async function loadReports(type, tbodyId) {
+        const tbody = document.getElementById(tbodyId);
+
+        tbody.innerHTML =
+            '<tr><td colspan="7">Loading reports...</td></tr>';
+
+        try {
+            const response = await fetch(
+                `/api/attendance/reports?type=${encodeURIComponent(type)}`
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Could not load reports.");
+            }
+
+            const reports = (data.reports || [])
+                .filter(report => report.type === type)
+                .sort((a, b) => a.start_date.localeCompare(b.start_date));
+
+            if (reports.length === 0) {
+                tbody.innerHTML =
+                    '<tr><td colspan="7">No completed reports available yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = reports.map(report => {
+                const students = report.students || [];
+
+                const present = students.reduce(
+                    (sum, student) =>
+                        sum + Number(student.present_days || 0),
+                    0
+                );
+
+                const recorded = students.reduce(
+                    (sum, student) =>
+                        sum + Number(student.recorded_days || 0),
+                    0
+                );
+
+                const absent = Math.max(0, recorded - present);
+
+                const percentage = recorded > 0
+                    ? (present / recorded) * 100
+                    : null;
+
+                let periodLabel;
+
+                if (type === "fortnightly") {
+                    periodLabel = `Fortnight ${report.period_number}`;
+                } else {
+                    const date = new Date(`${report.start_date}T12:00:00`);
+
+                    periodLabel = date.toLocaleDateString("en-IN", {
+                        month: "long",
+                        year: "numeric"
+                    });
+                }
+
+                const percentageText = percentage === null
+                    ? "No records"
+                    : `${percentage.toFixed(2)}%`;
+
+                return `
+                    <tr>
+                        <td>${escapeHTML(periodLabel)}</td>
+                        <td>${formatDate(report.start_date)}</td>
+                        <td>${formatDate(report.end_date)}</td>
+                        <td>${present}</td>
+                        <td>${absent}</td>
+                        <td>${recorded}</td>
+                        <td class="percentage ${
+                            percentage === null
+                                ? ""
+                                : percentageClass(percentage)
+                        }">${percentageText}</td>
+                    </tr>
+                `;
+            }).join("");
+        } catch (error) {
+            tbody.innerHTML =
+                `<tr><td colspan="7">${escapeHTML(error.message)}</td></tr>`;
+        }
+    }
+
+    // -------------------------------
+    // REFRESH ALL REPORTS
+    // -------------------------------
+    async function loadAllReports() {
+        await Promise.all([
+            loadSemesterSummary(),
+            loadReports("fortnightly", "fortnightlyTableBody"),
+            loadReports("monthly", "monthlyTableBody")
+        ]);
+    }
+
+    // -------------------------------
+    // INITIALIZE PAGE
+    // -------------------------------
+    document.addEventListener("DOMContentLoaded", async () => {
+        attendanceDateInput.value = getLocalDateString();
+
+        await Promise.all([
+            loadAttendance(),
+            loadAllReports()
+        ]);
+    });
+</script>
+
+</body>
+</html>

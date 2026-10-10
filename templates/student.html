@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ name }} - Student Profile</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/styles.css') }}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 24px;
+        }
+
+        .dashboard {
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .main-content {
+            min-width: 0;
+            padding: 68px 24px 40px;
+            margin-left: 250px;
+            transition: margin-left 0.3s ease;
+        }
+
+        .dashboard.menu-collapsed .main-content {
+            margin-left: 0;
+        }
+
+        .profile-top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            margin-bottom: 25px;
+            scroll-margin-top: 24px;
+        }
+
+        .profile-top-header h1 {
+            margin: 0 0 8px;
+        }
+
+        .profile-top-header p {
+            margin: 0;
+        }
+
+        .logout-button {
+            display: inline-block;
+            flex-shrink: 0;
+            background: #dc2626;
+            color: #fff !important;
+            padding: 10px 18px;
+            border-radius: 8px;
+            text-decoration: none !important;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+
+        .logout-button:hover {
+            background: #b91c1c;
+        }
+
+        .menu-toggle {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 1003;
+            width: 42px;
+            height: 42px;
+            border: none;
+            border-radius: 8px;
+            background: #0f172a;
+            color: #fff;
+            font-size: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .menu-toggle:hover {
+            background: #334155;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            min-width: 250px;
+            height: 100vh;
+            padding: 76px 16px 16px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            background: #0f172a !important;
+            color: #fff;
+            z-index: 1001;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-title {
+            color: #fff !important;
+            margin: 0 0 28px;
+            padding-left: 4px;
+            font-size: 21px;
+            flex-shrink: 0;
+        }
+
+        .sidebar nav {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            flex: 1;
+        }
+
+        .sidebar nav a {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            min-height: 44px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            color: #cbd5e1 !important;
+            text-decoration: none !important;
+        }
+
+        .sidebar nav a:hover {
+            background: #334155 !important;
+            color: #fff !important;
+        }
+
+        .sidebar nav a.active {
+            background: #2563eb !important;
+            color: #fff !important;
+            font-weight: 600;
+        }
+
+        .sidebar .back-button {
+            display: block;
+            width: 100%;
+            margin-top: auto;
+            padding: 12px 10px;
+            background: #1e293b;
+            color: #fff !important;
+            text-decoration: none !important;
+            text-align: center;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .sidebar .back-button:hover {
+            background: #334155;
+        }
+
+        .dashboard.menu-collapsed .sidebar {
+            transform: translateX(-100%);
+            pointer-events: none;
+        }
+
+        body[data-role="student"] .dashboard {
+            display: block;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        body[data-role="student"] .main-content {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        body[data-role="student"] .sidebar,
+        body[data-role="student"] .menu-toggle,
+        body[data-role="student"] .back-button {
+            display: none !important;
+        }
+
+        /* Progress */
+
+        .progress-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .progress-metric {
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        .progress-metric h4 {
+            margin: 0 0 10px;
+            color: #475569;
+        }
+
+        .progress-metric p {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .progress-comparison {
+            margin-top: 18px;
+            padding: 16px;
+            border-radius: 10px;
+            background: #f8fafc;
+        }
+
+        .progress-history-item {
+            padding: 16px;
+            margin: 12px 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        .progress-history-item h4 {
+            margin-top: 0;
+        }
+
+        .progress-history-values {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+        }
+
+        .snapshot-new-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 5px;
+            background: #dcfce7;
+            color: #166534;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .progress-status,
+        .intervention-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .progress-improving,
+        .status-completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .progress-declining {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .progress-no-change,
+        .progress-no-record {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        /* Placement analytics */
+
+        .placement-section {
+            margin: 24px 0;
+            padding: 24px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+        }
+
+        .placement-section h2 {
+            margin: 0 0 8px;
+            color: #0f172a;
+        }
+
+        .placement-section > p {
+            color: #64748b;
+        }
+
+        .placement-cards {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .placement-card {
+            padding: 18px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .placement-card h3 {
+            margin: 0 0 12px;
+            color: #475569;
+            font-size: 15px;
+        }
+
+        .placement-card p {
+            margin: 0;
+            color: #2563eb;
+            font-size: 25px;
+            font-weight: 700;
+        }
+
+        #placementStatus,
+        #placementCompany {
+            color: #0f172a;
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+
+        /* Placement readiness report */
+
+        .placement-report {
+            margin-top: 24px;
+            padding: 20px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+        }
+
+        .placement-report h3 {
+            margin: 0 0 18px;
+            color: #0f172a;
+            font-size: 20px;
+        }
+
+        .placement-report h4 {
+            margin: 20px 0 10px;
+            color: #334155;
+        }
+
+        .readiness-score {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding: 18px;
+            background: #dbeafe;
+            border-radius: 10px;
+        }
+
+        .readiness-score .score-value {
+            color: #1d4ed8;
+            font-size: 32px;
+            font-weight: 800;
+        }
+
+        .readiness-score .score-label {
+            color: #1e3a8a;
+            font-weight: 600;
+        }
+
+        .placement-skill {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .skill-box {
+            padding: 14px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow-wrap: anywhere;
+        }
+
+        .skill-box strong {
+            display: block;
+            margin-bottom: 6px;
+            color: #475569;
+            font-size: 13px;
+        }
+
+        .skill-box span {
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .placement-recommendations {
+            padding-left: 22px;
+            color: #334155;
+            line-height: 1.8;
+        }
+
+        .placement-recommendations li {
+            margin-bottom: 8px;
+        }
+
+        .placement-report .no-assessment {
+            padding: 12px;
+            background: #fef3c7;
+            color: #92400e;
+            border-radius: 8px;
+        }
+
+        /* Interventions */
+
+        .intervention-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 18px;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        .intervention-item > div:first-child {
+            min-width: 0;
+        }
+
+        .intervention-item h3 {
+            margin-top: 0;
+        }
+
+        .intervention-status {
+            white-space: nowrap;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-progress {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .status-select {
+            display: block;
+            margin-top: 12px;
+            max-width: 160px;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #fff;
+        }
+
+        .intervention-button {
+            cursor: pointer;
+        }
+
+        .intervention-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Responsive layout */
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+                padding: 68px 16px 40px;
+            }
+
+            .profile-top-header {
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .profile-top-header h1 {
+                font-size: 22px;
+            }
+
+            .profile-top-header p {
+                font-size: 13px;
+            }
+
+            .logout-button {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+
+            .placement-cards {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .placement-section {
+                padding: 16px;
+            }
+
+            .intervention-item {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body[data-role="student"] .main-content {
+                padding: 16px;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .placement-skill {
+                grid-template-columns: 1fr;
+            }
+
+            .readiness-score .score-value {
+                font-size: 26px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .placement-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body data-role="{{ session.get('role', '') }}">
+
+<div class="dashboard">
+
+    {% if session.get('role') in ['admin', 'staff'] %}
+
+    <button id="menuToggle"
+            class="menu-toggle"
+            type="button"
+            aria-label="Toggle menu"
+            aria-expanded="true"
+            aria-controls="dashboardSidebar">
+        ☰
+    </button>
+
+    <aside class="sidebar" id="dashboardSidebar">
+
+        <h2 class="sidebar-title">Student Analytics</h2>
+
+       
+<nav aria-label="Student profile navigation">
+    <a href="#studentTop" class="active">Student</a>
+    <a href="#progressSection">Snapshot</a>
+    <a href="#aiInsights">Analysis</a>
+    <a href="#placementSection">Placement Status</a>
+    <a href="#interventionHistory">Interventions</a>
+</nav>
+
+        <a href="#" id="backDashboardButton" class="back-button">
+            ← Back to Dashboard
+        </a>
+
+    </aside>
+
+    {% endif %}
+
+    <main class="main-content">
+
+        <header class="profile-top-header" id="studentTop">
+            <div>
+                <h1>Student Profile</h1>
+                <p>AI-powered student performance analysis</p>
+            </div>
+
+            <a href="{{ url_for('logout') }}" class="logout-button">
+                🚪 Log Out
+            </a>
+        </header>
+
+        <section class="student-profile">
+            <div class="profile-header">
+                <div class="student-avatar">👤</div>
+                <div>
+                    <h2>{{ name }}</h2>
+                    <p>Student ID: <span>{{ student_id }}</span></p>
+                </div>
+            </div>
+        </section>
+
+        <section class="stats">
+
+            <div class="card">
+                <h3>Attendance</h3>
+                <p id="currentAttendance">{{ attendance }}%</p>
+            </div>
+
+            <div class="card">
+                <h3>Academic Score</h3>
+                <p id="currentScore">{{ score }}%</p>
+            </div>
+
+            <div class="card">
+                <h3>Study Hours</h3>
+                <p id="currentStudyHours">{{ study_hours }} hrs/day</p>
+            </div>
+
+            <div class="card">
+                <h3>Risk Level</h3>
+                <p>
+                    <span class="risk
+                        {% if risk == 'High' %}risk-high
+                        {% elif risk == 'Medium' %}risk-medium
+                        {% else %}risk-low{% endif %}">
+                        {{ risk }}
+                    </span>
+                </p>
+            </div>
+
+        </section>
+
+        <!-- Placement Analytics Section -->
+        <section class="placement-section" id="placementSection">
+
+            <h2>Placement Analytics</h2>
+            <p>Track your placement readiness and interview performance.</p>
+
+            <div class="placement-cards">
+
+                <div class="placement-card">
+                    <h3>Aptitude</h3>
+                    <p><span id="aptitudeScore">--</span> / 100</p>
+                </div>
+
+                <div class="placement-card">
+                    <h3>Coding</h3>
+                    <p><span id="codingScore">--</span> / 100</p>
+                </div>
+
+                <div class="placement-card">
+                    <h3>Communication</h3>
+                    <p><span id="communicationScore">--</span> / 100</p>
+                </div>
+
+                <div class="placement-card">
+                    <h3>Mock Interview</h3>
+                    <p><span id="mockInterviewScore">--</span> / 100</p>
+                </div>
+
+            </div>
+
+            <p>
+                <strong>Placement Status:</strong>
+                <span id="placementStatus">Loading...</span>
+            </p>
+
+            <p>
+                <strong>Company:</strong>
+                <span id="placementCompany">Not specified</span>
+            </p>
+
+            <!-- Placement Readiness Report -->
+            <div class="placement-report">
+
+                <h3>Placement Readiness Report</h3>
+
+                {% if placement_report and placement_report.assessed %}
+
+                    <div class="readiness-score">
+                        <span class="score-value">
+                            {{ placement_report.readiness }}%
+                        </span>
+
+                        <span class="score-label">
+                            Placement Readiness
+                        </span>
+                    </div>
+
+                    <div class="placement-skill">
+
+                        <div class="skill-box">
+                            <strong>Strongest Skill</strong>
+                            <span>{{ placement_report.strongest_skill }}</span>
+                        </div>
+
+                        <div class="skill-box">
+                            <strong>Weakest Skill</strong>
+                            <span>{{ placement_report.weakest_skill }}</span>
+                        </div>
+
+                    </div>
+
+                    <h4>Recommendations</h4>
+
+                    <ul class="placement-recommendations">
+                        {% for item in placement_report.recommendations %}
+                            <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+
+                {% else %}
+
+                    <p class="no-assessment">
+                        No placement assessment available yet.
+                    </p>
+
+                {% endif %}
+
+            </div>
+            <!-- End Placement Readiness Report -->
+
+        </section>
+        <!-- End Placement Analytics Section -->
+
+        <section class="priority-card">
+
+            <h3>🎯 AI Priority Level</h3>
+
+            <p>
+                <span class="priority-value
+                    {% if priority and 'URGENT' in priority %}priority-urgent
+                    {% elif priority and 'HIGH' in priority %}priority-high
+                    {% elif priority and 'MEDIUM' in priority %}priority-medium
+                    {% else %}priority-normal{% endif %}">
+                    {{ priority }}
+                </span>
+            </p>
+
+            <p>
+                This priority is based on the student's attendance,
+                academic score, and daily study hours.
+            </p>
+
+        </section>
+
+        <section class="ai-section" id="aiInsights">
+
+            <h2>AI Analysis</h2>
+
+            <div class="insight">
+                <h3>Why is this student classified this way?</h3>
+                <p>{{ explanation }}</p>
+            </div>
+
+        </section>
+
+        <section class="ai-section">
+
+            <h2>Recommended Actions</h2>
+
+            <div class="insight">
+                <h3>AI Recommended Intervention</h3>
+                <p>{{ recommendation }}</p>
+            </div>
+
+        </section>
+
+        <section class="progress-card" id="progressSection">
+
+            <div id="latestProgress">
+                <p>Loading progress data...</p>
+            </div>
+
+            <h3>Progress History</h3>
+
+            <p>
+                The newest saved snapshot appears first.
+                The NEW badge identifies the latest saved snapshot.
+            </p>
+
+            <div id="progressHistory">
+                <p>Loading progress history...</p>
+            </div>
+
+        </section>
+
+        {% if session.get('role') == 'staff' %}
+
+        <section class="intervention-section" id="takeAction">
+
+            <h2>Take Action</h2>
+
+            <div class="intervention-card">
+
+                <h3>Create Intervention</h3>
+
+                <label for="action">Intervention Type</label>
+
+                <select id="action">
+                    <option value="">Select an intervention</option>
+                    <option value="Academic Mentoring">Academic Mentoring</option>
+                    <option value="Attendance Counseling">Attendance Counseling</option>
+                    <option value="Study Plan Support">Study Plan Support</option>
+                    <option value="Faculty Meeting">Faculty Meeting</option>
+                    <option value="Parent Meeting">Parent Meeting</option>
+                </select>
+
+                <label for="notes">Notes</label>
+
+                <textarea id="notes"
+                          rows="4"
+                          placeholder="Enter notes about this intervention..."></textarea>
+
+                <button id="addIntervention"
+                        class="intervention-button"
+                        type="button">
+                    Add Intervention
+                </button>
+
+                <p id="interventionMessage"
+                   class="intervention-message"
+                   role="status"
+                   aria-live="polite"></p>
+
+            </div>
+
+        </section>
+
+        {% endif %}
+
+        <section class="intervention-section" id="interventionHistory">
+
+            <h2>Intervention History</h2>
+
+            <div id="interventionList" class="intervention-list">
+                <p class="no-interventions">Loading interventions...</p>
+            </div>
+
+        </section>
+
+    </main>
+</div>
+
+<input type="hidden" id="studentId" value="{{ student_id }}">
+
+<script>
+/* =========================================
+   ROLE-BASED DASHBOARD RETURN
+========================================= */
+
+const userRole = document.body.dataset.role;
+
+const backDashboardButton =
+    document.getElementById("backDashboardButton");
+
+if (backDashboardButton) {
+    if (userRole === "admin") {
+        backDashboardButton.href = "/";
+    } else if (userRole === "staff") {
+        backDashboardButton.href = "/staff/dashboard";
+    }
+
+    backDashboardButton.addEventListener("click", function (event) {
+        event.preventDefault();
+
+        if (userRole === "admin") {
+            window.location.href = "/";
+        } else if (userRole === "staff") {
+            window.location.href = "/staff/dashboard";
+        }
+    });
+}
+
+/* =========================================
+   SIDEBAR HAMBURGER TOGGLE
+========================================= */
+
+const menuToggle = document.getElementById("menuToggle");
+const dashboard = document.querySelector(".dashboard");
+const sidebar = document.getElementById("dashboardSidebar");
+
+if (menuToggle && dashboard && sidebar) {
+    menuToggle.addEventListener("click", function () {
+        dashboard.classList.toggle("menu-collapsed");
+
+        const isOpen =
+            !dashboard.classList.contains("menu-collapsed");
+
+        menuToggle.setAttribute("aria-expanded", String(isOpen));
+        menuToggle.setAttribute(
+            "aria-label",
+            isOpen ? "Close menu" : "Open menu"
+        );
+    });
+}
+
+/* =========================================
+   SIDEBAR NAVIGATION
+========================================= */
+
+const sidebarLinks = document.querySelectorAll(
+    "#dashboardSidebar nav a"
+);
+
+sidebarLinks.forEach(link => {
+    link.addEventListener("click", function (event) {
+        const targetId = this.getAttribute("href");
+
+        if (!targetId || !targetId.startsWith("#")) return;
+
+        const target = document.querySelector(targetId);
+
+        if (!target) return;
+
+        event.preventDefault();
+
+        target.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
+        sidebarLinks.forEach(item => item.classList.remove("active"));
+        this.classList.add("active");
+
+        history.replaceState(null, "", targetId);
+
+        if (window.innerWidth <= 768 && dashboard) {
+            dashboard.classList.add("menu-collapsed");
+
+            if (menuToggle) {
+                menuToggle.setAttribute("aria-expanded", "false");
+                menuToggle.setAttribute("aria-label", "Open menu");
+            }
+        }
+    });
+});
+
+/* =========================================
+   COMMON ELEMENTS
+========================================= */
+
+const isStaff = userRole === "staff";
+
+const studentId = Number(
+    document.getElementById("studentId").value
+);
+
+const actionInput = document.getElementById("action");
+const notesInput = document.getElementById("notes");
+const addButton = document.getElementById("addIntervention");
+
+const interventionMessage =
+    document.getElementById("interventionMessage");
+
+const interventionList =
+    document.getElementById("interventionList");
+
+const latestProgress =
+    document.getElementById("latestProgress");
+
+const progressHistory =
+    document.getElementById("progressHistory");
+
+/* =========================================
+   HELPER FUNCTIONS
+========================================= */
+
+function createElement(tag, className, text) {
+    const element = document.createElement(tag);
+
+    if (className) element.className = className;
+
+    if (text !== undefined && text !== null) {
+        element.textContent = text;
+    }
+
+    return element;
+}
+
+function formatValue(value, suffix = "") {
+    if (value === undefined || value === null || value === "") {
+        return "—";
+    }
+
+    return `${value}${suffix}`;
+}
+
+function getProgressClass(status) {
+    if (status === "Improving") return "progress-improving";
+    if (status === "Declining") return "progress-declining";
+    if (status === "No Change") return "progress-no-change";
+    if (status === "First Snapshot") return "progress-no-record";
+
+    return "progress-no-record";
+}
+
+function addNewBadge(parent) {
+    parent.appendChild(document.createTextNode(" "));
+    parent.appendChild(
+        createElement("span", "snapshot-new-badge", "🆕 NEW")
+    );
+}
+
+/* =========================================
+   LOAD PROGRESS HISTORY
+========================================= */
+
+let progressRequestRunning = false;
+
+async function loadProgress() {
+    if (progressRequestRunning) return;
+
+    progressRequestRunning = true;
+
+    try {
+        const response = await fetch(
+            `/api/progress/${studentId}`,
+            { cache: "no-store" }
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to load student progress.");
+        }
+
+        const data = await response.json();
+
+        displayLatestProgress(data);
+        displayProgressHistory(data.records || []);
+
+    } catch (error) {
+        console.error("Progress loading error:", error);
+
+        latestProgress.replaceChildren(
+            createElement("p", "", "Unable to load progress data.")
+        );
+
+        progressHistory.replaceChildren(
+            createElement("p", "", "Unable to load progress history.")
+        );
+
+    } finally {
+        progressRequestRunning = false;
+    }
+}
+
+/* =========================================
+   LOAD PLACEMENT ANALYTICS
+========================================= */
+
+async function loadPlacement() {
+    const aptitude = document.getElementById("aptitudeScore");
+    const coding = document.getElementById("codingScore");
+    const communication = document.getElementById("communicationScore");
+    const mockInterview = document.getElementById("mockInterviewScore");
+    const status = document.getElementById("placementStatus");
+    const company = document.getElementById("placementCompany");
+
+    try {
+        const response = await fetch(
+            `/api/placement/${studentId}`,
+            { cache: "no-store" }
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to load placement data.");
+        }
+
+        const data = await response.json();
+
+        /*
+         * Use -- for missing scores instead of displaying
+         * a misleading zero when no assessment exists.
+         */
+        aptitude.textContent =
+            formatValue(data.aptitude_score);
+
+        coding.textContent =
+            formatValue(data.coding_score);
+
+        communication.textContent =
+            formatValue(data.communication_score);
+
+        mockInterview.textContent =
+            formatValue(data.mock_interview_score);
+
+        status.textContent =
+            data.placement_status || "Not Placed";
+
+        company.textContent =
+            data.company_name || "Not specified";
+
+    } catch (error) {
+        console.error("Placement loading error:", error);
+
+        aptitude.textContent = "—";
+        coding.textContent = "—";
+        communication.textContent = "—";
+        mockInterview.textContent = "—";
+
+        status.textContent = "Unable to load";
+        company.textContent = "Unavailable";
+    }
+}
+
+/* =========================================
+   DISPLAY LATEST SNAPSHOT
+========================================= */
+
+function displayLatestProgress(data) {
+    latestProgress.replaceChildren();
+
+    const latest = data.latest;
+    const previous = data.previous;
+
+    let status;
+
+    if (!latest) {
+        status = "No Previous Record";
+    } else if (!previous) {
+        status = "First Snapshot";
+    } else {
+        status = data.progress?.status || "Comparison Available";
+    }
+
+    const heading = createElement("h3", "", "Latest Saved Snapshot");
+
+    if (latest) addNewBadge(heading);
+
+    latestProgress.append(
+        heading,
+        createElement(
+            "span",
+            `progress-status ${getProgressClass(status)}`,
+            status
+        )
+    );
+
+    if (!latest) {
+        latestProgress.appendChild(
+            createElement(
+                "p",
+                "",
+                "No progress snapshots are available yet."
+            )
+        );
+        return;
+    }
+
+    const summary = createElement("div", "progress-summary");
+
+    const metrics = [
+        {
+            title: "Attendance",
+            value: formatValue(latest.attendance, "%")
+        },
+        {
+            title: "Academic Score",
+            value: formatValue(latest.score, "%")
+        },
+        {
+            title: "Study Hours",
+            value: formatValue(latest.study_hours, " hrs/day")
+        }
+    ];
+
+    metrics.forEach(metric => {
+        const card = createElement("div", "progress-metric");
+
+        card.append(
+            createElement("h4", "", metric.title),
+            createElement("p", "", metric.value)
+        );
+
+        summary.appendChild(card);
+    });
+
+    latestProgress.appendChild(summary);
+
+    if (latest.recorded_at) {
+        latestProgress.appendChild(
+            createElement("p", "", `Last snapshot: ${latest.recorded_at}`)
+        );
+    }
+
+    if (previous) {
+        const comparison = createElement("div", "progress-comparison");
+
+        comparison.appendChild(
+            createElement("h4", "", "Change from Previous Snapshot")
+        );
+
+        const comparisons = [
+            {
+                label: "Attendance",
+                current: Number(latest.attendance),
+                previous: Number(previous.attendance),
+                suffix: "%"
+            },
+            {
+                label: "Academic Score",
+                current: Number(latest.score),
+                previous: Number(previous.score),
+                suffix: "%"
+            },
+            {
+                label: "Study Hours",
+                current: Number(latest.study_hours),
+                previous: Number(previous.study_hours),
+                suffix: " hrs/day"
+            }
+        ];
+
+        comparisons.forEach(item => {
+            const difference = item.current - item.previous;
+            const sign = difference > 0 ? "+" : "";
+
+            comparison.appendChild(
+                createElement(
+                    "p",
+                    "",
+                    `${item.label}: ${sign}${difference.toFixed(1)}${item.suffix}`
+                )
+            );
+        });
+
+        latestProgress.appendChild(comparison);
+
+    } else {
+        latestProgress.appendChild(
+            createElement(
+                "p",
+                "",
+                "This is the first snapshot. Future snapshots will allow progress comparison."
+            )
+        );
+    }
+}
+
+/* =========================================
+   DISPLAY PROGRESS HISTORY
+========================================= */
+
+function displayProgressHistory(history) {
+    progressHistory.replaceChildren();
+
+    if (history.length === 0) {
+        progressHistory.appendChild(
+            createElement(
+                "p",
+                "",
+                "No progress snapshots available yet."
+            )
+        );
+        return;
+    }
+
+    const recentHistory = history.slice(0, 5);
+
+    recentHistory.forEach((record, index) => {
+        const item = createElement("div", "progress-history-item");
+        const snapshotNumber = recentHistory.length - index;
+
+        const heading = createElement(
+            "h4",
+            "",
+            `Snapshot ${snapshotNumber}`
+        );
+
+        if (index === 0) addNewBadge(heading);
+
+        item.appendChild(heading);
+
+        if (record.recorded_at) {
+            item.appendChild(
+                createElement(
+                    "p",
+                    "",
+                    `Recorded: ${record.recorded_at}`
+                )
+            );
+        }
+
+        const values = createElement("div", "progress-history-values");
+
+        values.append(
+            createElement(
+                "span",
+                "",
+                `Attendance: ${formatValue(record.attendance, "%")}`
+            ),
+            createElement(
+                "span",
+                "",
+                `Score: ${formatValue(record.score, "%")}`
+            ),
+            createElement(
+                "span",
+                "",
+                `Study: ${formatValue(record.study_hours, " hrs/day")}`
+            )
+        );
+
+        item.appendChild(values);
+        progressHistory.appendChild(item);
+    });
+}
+
+/* =========================================
+   LOAD INTERVENTIONS
+========================================= */
+
+let interventionRequestRunning = false;
+
+async function loadInterventions() {
+    if (interventionRequestRunning) return;
+
+    interventionRequestRunning = true;
+
+    try {
+        const response = await fetch(
+            `/api/interventions/${studentId}`,
+            { cache: "no-store" }
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to load interventions.");
+        }
+
+        const interventions = await response.json();
+
+        interventionList.replaceChildren();
+
+        if (interventions.length === 0) {
+            interventionList.appendChild(
+                createElement(
+                    "p",
+                    "no-interventions",
+                    "No interventions recorded yet."
+                )
+            );
+            return;
+        }
+
+        interventions.forEach(intervention => {
+            const item = createElement("div", "intervention-item");
+
+            let statusClass = "status-pending";
+
+            if (intervention.status === "Completed") {
+                statusClass = "status-completed";
+            } else if (intervention.status === "In Progress") {
+                statusClass = "status-progress";
+            }
+
+            const details = createElement("div");
+            const controls = createElement("div");
+
+            details.append(
+                createElement("h3", "", intervention.action),
+                createElement(
+                    "p",
+                    "",
+                    intervention.notes || "No notes added."
+                ),
+                createElement(
+                    "small",
+                    "",
+                    `Created: ${intervention.created_at || "Unknown"}`
+                )
+            );
+
+            controls.appendChild(
+                createElement(
+                    "span",
+                    `intervention-status ${statusClass}`,
+                    intervention.status || "Pending"
+                )
+            );
+
+            if (isStaff) {
+                const select = document.createElement("select");
+
+                select.className = "status-select";
+                select.setAttribute(
+                    "aria-label",
+                    "Update intervention status"
+                );
+
+                ["Pending", "In Progress", "Completed"].forEach(value => {
+                    const option = document.createElement("option");
+
+                    option.value = value;
+                    option.textContent = value;
+                    option.selected =
+                        (intervention.status || "Pending") === value;
+
+                    select.appendChild(option);
+                });
+
+                select.addEventListener("change", async function () {
+                    const previousStatus =
+                        intervention.status || "Pending";
+
+                    const newStatus = select.value;
+                    select.disabled = true;
+
+                    try {
+                        const updateResponse = await fetch(
+                            `/api/interventions/${intervention.id}`,
+                            {
+                                method: "PUT",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    status: newStatus
+                                })
+                            }
+                        );
+
+                        const result = await updateResponse.json();
+
+                        if (!updateResponse.ok) {
+                            throw new Error(
+                                result.error || "Failed to update status."
+                            );
+                        }
+
+                        intervention.status = newStatus;
+
+                        await refreshInterventions();
+
+                    } catch (error) {
+                        alert(error.message);
+                        intervention.status = previousStatus;
+                        await refreshInterventions();
+
+                    } finally {
+                        select.disabled = false;
+                    }
+                });
+
+                controls.appendChild(select);
+            }
+
+            item.append(details, controls);
+            interventionList.appendChild(item);
+        });
+
+    } catch (error) {
+        console.error("Intervention loading error:", error);
+
+        interventionList.replaceChildren(
+            createElement(
+                "p",
+                "no-interventions",
+                "Failed to load interventions."
+            )
+        );
+
+    } finally {
+        interventionRequestRunning = false;
+    }
+}
+
+async function refreshInterventions() {
+    while (interventionRequestRunning) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    await loadInterventions();
+}
+
+/* =========================================
+   ADD INTERVENTION: STAFF ONLY
+========================================= */
+
+if (isStaff && addButton) {
+    addButton.addEventListener("click", async function () {
+        const action = actionInput.value;
+        const notes = notesInput.value.trim();
+
+        if (!action) {
+            interventionMessage.textContent =
+                "Please select an intervention.";
+            interventionMessage.style.color = "#dc2626";
+            return;
+        }
+
+        addButton.disabled = true;
+
+        try {
+            const response = await fetch(
+                `/api/interventions/${studentId}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        action: action,
+                        notes: notes
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.error || "Failed to add intervention."
+                );
+            }
+
+            interventionMessage.textContent =
+                "Intervention added successfully!";
+            interventionMessage.style.color = "#16a34a";
+
+            actionInput.value = "";
+            notesInput.value = "";
+
+            await refreshInterventions();
+
+        } catch (error) {
+            console.error("Error adding intervention:", error);
+
+            interventionMessage.textContent = error.message;
+            interventionMessage.style.color = "#dc2626";
+
+        } finally {
+            addButton.disabled = false;
+        }
+    });
+}
+
+/* =========================================
+   INITIAL LOAD AND AUTOMATIC REFRESH
+========================================= */
+
+loadProgress();
+loadPlacement();
+loadInterventions();
+
+setInterval(loadProgress, 10000);
+setInterval(loadInterventions, 30000);
+</script>
+
+</body>
+</html>

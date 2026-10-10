@@ -1,0 +1,352 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Placement Analytics</title>
+
+    <style>
+       
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 30px 20px;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(135deg, #eff6ff, #f8fafc);
+    color: #1e293b;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 32px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+}
+
+
+.back-button {
+    display: inline-block;
+    margin-bottom: 20px;
+    padding: 11px 18px;
+    background: #e2e8f0;
+    color: #1e3a8a;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.back-button:hover {
+    background: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: none;
+}
+
+h1 {
+    margin: 0 0 10px;
+    color: #1e3a8a;
+    font-size: 30px;
+    letter-spacing: -0.5px;
+}
+
+.container > p {
+    color: #64748b;
+    line-height: 1.6;
+}
+
+#placementForm {
+    margin-top: 28px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+}
+
+label {
+    display: block;
+    margin-bottom: 9px;
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+input,
+select {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    background: #f8fafc;
+    color: #0f172a;
+    font: inherit;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s,
+                background 0.2s;
+}
+
+input:focus,
+select:focus {
+    border-color: #3b82f6;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+button {
+    display: inline-block;
+    margin-top: 28px;
+    padding: 14px 24px;
+    border: none;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 5px 12px rgba(37, 99, 235, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+#message {
+    min-height: 24px;
+    margin-top: 20px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    color: #166534;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 12px;
+    }
+
+    .container {
+        margin: 8px auto;
+        padding: 22px 18px;
+        border-radius: 13px;
+    }
+
+    h1 {
+        font-size: 25px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    button {
+        width: 100%;
+    }
+}
+    </style>
+</head>
+
+<body>
+<div class="container">
+   
+<button type="button" class="back-button" onclick="goBackToDashboard()">
+    ← Back to Dashboard
+</button>
+
+    <h1>Placement Analytics</h1>
+    <p>Enter and update a student's placement performance.</p>
+
+    <form id="placementForm">
+        <div class="form-grid">
+            <div>
+                <label for="studentId">Select Student</label>
+                <select id="studentId" required>
+                    <option value="">Choose a student</option>
+                    {% for student in students %}
+                    <option value="{{ student['id'] }}">
+                        {{ student['id'] }} - {{ student['name'] }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="aptitude">Aptitude Score (0–100)</label>
+                <input id="aptitude" type="number" min="0" max="100"
+                       step="0.01" value="0" required>
+            </div>
+
+            <div>
+                <label for="coding">Coding Score (0–100)</label>
+                <input id="coding" type="number" min="0" max="100"
+                       step="0.01" value="0" required>
+            </div>
+
+            <div>
+                <label for="communication">Communication Score (0–100)</label>
+                <input id="communication" type="number" min="0" max="100"
+                       step="0.01" value="0" required>
+            </div>
+
+            <div>
+                <label for="interview">Mock Interview Score (0–100)</label>
+                <input id="interview" type="number" min="0" max="100"
+                       step="0.01" value="0" required>
+            </div>
+
+            <div>
+                <label for="placementStatus">Placement Status</label>
+                <select id="placementStatus" required>
+                    <option value="Not Placed">Not Placed</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Placed">Placed</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="company">Company Name (optional)</label>
+                <input id="company" type="text"
+                       placeholder="Enter company name">
+            </div>
+        </div>
+
+        <button type="submit">Save Placement Record</button>
+    </form>
+
+    <p id="message" role="status"></p>
+</div>
+
+<script>
+    
+function goBackToDashboard() {
+    const role = "{{ session.get('role', '') }}";
+
+    if (role.toLowerCase() === "admin") {
+        window.location.href = "/admin/dashboard";
+    } else if (role.toLowerCase() === "staff") {
+        window.location.href = "/staff/dashboard";
+    } else {
+        window.location.href = "/";
+    }
+}
+
+    const studentSelect = document.getElementById("studentId");
+    const form = document.getElementById("placementForm");
+    const message = document.getElementById("message");
+
+    // Load the selected student's existing record.
+    studentSelect.addEventListener("change", async function () {
+        const studentId = this.value;
+
+        if (!studentId) {
+            form.reset();
+            message.textContent = "";
+            return;
+        }
+
+        try {
+            message.textContent = "Loading placement record...";
+
+            const response = await fetch(
+                `/api/placement/${encodeURIComponent(studentId)}`
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Could not load record.");
+            }
+
+            document.getElementById("aptitude").value =
+                data.aptitude_score ?? 0;
+            document.getElementById("coding").value =
+                data.coding_score ?? 0;
+            document.getElementById("communication").value =
+                data.communication_score ?? 0;
+            document.getElementById("interview").value =
+                data.mock_interview_score ?? 0;
+            document.getElementById("placementStatus").value =
+                data.placement_status ?? "Not Placed";
+            document.getElementById("company").value =
+                data.company_name ?? "";
+
+            message.textContent = "Record loaded.";
+        } catch (error) {
+            message.textContent = error.message;
+        }
+    });
+
+    // Save the placement record using your existing API.
+    form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const studentId = studentSelect.value;
+
+        if (!studentId) {
+            message.textContent = "Please select a student.";
+            return;
+        }
+
+        const payload = {
+            aptitude_score: Number(document.getElementById("aptitude").value),
+            coding_score: Number(document.getElementById("coding").value),
+            communication_score: Number(
+                document.getElementById("communication").value
+            ),
+            mock_interview_score: Number(
+                document.getElementById("interview").value
+            ),
+            placement_status:
+                document.getElementById("placementStatus").value,
+            company_name: document.getElementById("company").value.trim()
+        };
+
+        try {
+            message.textContent = "Saving record...";
+
+            const response = await fetch(
+                `/api/placement/${encodeURIComponent(studentId)}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Could not save record.");
+            }
+
+            message.textContent = "Placement record saved successfully!";
+        } catch (error) {
+            message.textContent = error.message;
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Account Management</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        h1, h2 {
+            margin-top: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        label {
+            display: block;
+            margin: 16px 0 7px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 15px;
+            background: white;
+        }
+
+        input:focus, select:focus {
+            outline: 2px solid #93c5fd;
+            border-color: #2563eb;
+        }
+
+        button, .link {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        button:hover, .link:hover {
+            background: #1d4ed8;
+        }
+
+        .secondary {
+            background: #475569;
+        }
+
+        .secondary:hover {
+            background: #334155;
+        }
+
+        .messages {
+            padding: 13px;
+            background: #fef3c7;
+            color: #92400e;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .student-field {
+            display: none;
+        }
+
+        .hint {
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 13px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        th {
+            background: #eff6ff;
+        }
+
+        .role {
+            text-transform: capitalize;
+            font-weight: bold;
+        }
+
+        .empty {
+            text-align: center;
+            color: #64748b;
+            padding: 25px;
+        }
+
+        .role-info {
+            padding: 12px;
+            background: #eff6ff;
+            border-radius: 6px;
+            color: #1e40af;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 15px;
+            }
+
+            .card {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1>
+            {% if current_role == "admin" %}
+                Manage Accounts
+            {% else %}
+                Create Student Accounts
+            {% endif %}
+        </h1>
+
+        {% if current_role == "admin" %}
+            <a class="link secondary"
+               href="{{ url_for('admin_dashboard') }}">
+                Back to Dashboard
+            </a>
+        {% else %}
+            <a class="link secondary"
+               href="{{ url_for('staff_dashboard') }}">
+                Back to Dashboard
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="messages" role="status">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Create account form -->
+    <div class="card">
+        <h2>Create an Account</h2>
+
+        {% if current_role == "admin" %}
+            <div class="role-info">
+                You can create Staff and Student accounts.
+            </div>
+        {% else %}
+            <div class="role-info">
+                You can create Student accounts only.
+            </div>
+        {% endif %}
+
+        <form method="POST"
+              action="{{ url_for('manage_accounts') }}"
+              id="accountForm">
+
+            <label for="username">Username *</label>
+            <input
+                type="text"
+                id="username"
+                name="username"
+                placeholder="Enter username"
+                minlength="3"
+                maxlength="50"
+                autocomplete="off"
+                required
+            >
+
+            <div class="hint">
+                Username must contain at least 3 characters.
+            </div>
+
+            <label for="password">Password *</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Enter password"
+                minlength="8"
+                maxlength="128"
+                autocomplete="new-password"
+                required
+            >
+
+            <div class="hint">
+                Password must contain at least 8 characters.
+            </div>
+
+            <label for="role">Account Role *</label>
+            <select id="role" name="role" required>
+                <option value="">-- Select account role --</option>
+
+                {% if current_role == "admin" %}
+                    <option value="staff">Staff</option>
+                {% endif %}
+
+                <option value="student">Student</option>
+            </select>
+
+            <!-- Required only when creating a student account -->
+            <div id="studentField" class="student-field">
+
+                <label for="student_id">Select Student *</label>
+
+                <select id="student_id" name="student_id">
+                    <option value="">-- Select existing student --</option>
+
+                    {% for student in students %}
+                        <option value="{{ student['id'] }}">
+                            ID {{ student['id'] }} - {{ student['name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <div class="hint">
+                    Select an existing student record. Each student
+                    can have only one linked login account.
+                </div>
+            </div>
+
+            <button type="submit">Create Account</button>
+        </form>
+    </div>
+
+    <!-- Existing accounts -->
+    <div class="card">
+        <h2>Existing Accounts</h2>
+
+        {% if current_role == "admin" %}
+            <p>All registered accounts in the system.</p>
+        {% else %}
+            <p>Registered student accounts.</p>
+        {% endif %}
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Account ID</th>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Linked Student</th>
+                        <th>Created At</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for account in accounts %}
+                    <tr>
+                        <td>{{ account['id'] }}</td>
+
+                        <td>{{ account['username'] }}</td>
+
+                        <td class="role">
+                            {{ account['role'] }}
+                        </td>
+
+                        <td>
+                            {% if account['role'] == 'student' %}
+                                {{ account['student_name'] or 'Unknown' }}
+                                (ID {{ account['student_id'] }})
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+
+                        <td>{{ account['created_at'] }}</td>
+                    </tr>
+
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="empty">
+                            No accounts found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const roleSelect = document.getElementById("role");
+    const studentField = document.getElementById("studentField");
+    const studentSelect = document.getElementById("student_id");
+    const accountForm = document.getElementById("accountForm");
+
+    function updateStudentField() {
+        const isStudent = roleSelect.value === "student";
+
+        studentField.style.display = isStudent ? "block" : "none";
+        studentSelect.required = isStudent;
+
+        if (!isStudent) {
+            studentSelect.value = "";
+        }
+    }
+
+    roleSelect.addEventListener("change", updateStudentField);
+
+    accountForm.addEventListener("submit", function(event) {
+        if (roleSelect.value === "student" && !studentSelect.value) {
+            event.preventDefault();
+            alert("Please select an existing student.");
+            studentSelect.focus();
+        }
+    });
+
+    updateStudentField();
+</script>
+
+</body>
+</html>

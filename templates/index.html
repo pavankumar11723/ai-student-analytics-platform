@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Student Analytics Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/styles.css') }}"
+    >
+
+    <style>
+        /* ==============================
+           HEADER
+        ============================== */
+
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .dashboard-user {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .manage-button,
+        .logout-button {
+            display: inline-block;
+            padding: 10px 16px;
+            color: #ffffff;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: background-color 0.2s ease;
+        }
+
+        .manage-button {
+            background-color: #2563eb;
+        }
+
+        .manage-button:hover {
+            background-color: #1d4ed8;
+            color: #ffffff;
+        }
+
+        .logout-button {
+            background-color: #dc2626;
+        }
+
+        .logout-button:hover {
+            background-color: #b91c1c;
+            color: #ffffff;
+        }
+
+        /* ==============================
+           HAMBURGER BUTTON
+        ============================== */
+
+.menu-toggle {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1003;
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #ffffff;
+    font-size: 25px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Keep the heading below the hamburger button */
+.main-content {
+    min-width: 0;
+    margin-left: 250px;
+    padding-top: 24px;
+    transition: margin-left 0.3s ease;
+}
+
+.dashboard-header {
+    padding-left: 54px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+        padding-top: 68px;
+    }
+
+    .dashboard-header {
+        padding-left: 0;
+    }
+}
+        /* ==============================
+           FIXED DARK SIDEBAR
+        ============================== */
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            min-width: 250px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding: 76px 16px 24px;
+            margin: 0;
+            background: #0f172a !important;
+            color: #ffffff;
+            z-index: 1001;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        /* Sidebar title */
+        .sidebar-title {
+            color: #ffffff !important;
+            margin: 0 0 28px 0;
+            padding-left: 4px;
+            font-size: 21px;
+            line-height: 1.4;
+            white-space: nowrap;
+        }
+
+        /* Navigation layout */
+        .sidebar nav {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .sidebar nav a {
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 44px;
+            padding: 12px 14px;
+            margin: 0;
+            border-radius: 8px;
+            color: #cbd5e1 !important;
+            text-decoration: none;
+            line-height: 1.4;
+            transition:
+                background-color 0.2s ease,
+                color 0.2s ease;
+        }
+
+        .sidebar nav a:hover {
+            background-color: #334155 !important;
+            color: #ffffff !important;
+        }
+
+        .sidebar nav a.active {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+
+        /* ==============================
+           MAIN CONTENT
+        ============================== */
+
+        .main-content {
+            min-width: 0;
+            margin-left: 250px;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Hide sidebar when hamburger is clicked */
+        .dashboard.menu-collapsed .sidebar {
+            transform: translateX(-100%);
+            pointer-events: none;
+        }
+
+        /* Expand content when sidebar closes */
+        .dashboard.menu-collapsed .main-content {
+            margin-left: 0;
+        }
+
+        /* ==============================
+           CLICKABLE STUDENT ROWS
+        ============================== */
+
+        #studentTableBody tr.student-row {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        #studentTableBody tr.student-row:hover {
+            background-color: #eff6ff;
+        }
+
+        #studentTableBody tr.student-row:focus {
+            outline: 2px solid #2563eb;
+            outline-offset: -2px;
+        }
+
+        /* ==============================
+           RESPONSIVE DESIGN
+        ============================== */
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+                min-width: 250px;
+                padding-top: 68px;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .dashboard-header {
+                align-items: flex-start;
+            }
+
+            .dashboard-user {
+                justify-content: flex-start;
+            }
+
+            .menu-toggle {
+                top: 12px;
+                left: 12px;
+            }
+
+            .dashboard:not(.menu-collapsed) .sidebar {
+                transform: translateX(0);
+            }
+
+            .dashboard.menu-collapsed .sidebar {
+                transform: translateX(-100%);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+
+        <!-- HAMBURGER MENU -->
+        <button
+            id="menuToggle"
+            class="menu-toggle"
+            type="button"
+            aria-label="Close menu"
+            aria-expanded="true"
+            aria-controls="dashboardSidebar"
+        >
+            ☰
+        </button>
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="dashboardSidebar">
+            <h2 class="sidebar-title">Student Analytics</h2>
+
+            <nav aria-label="Main navigation">
+                <a href="/" class="active">Dashboard</a>
+                <a href="/#students">Students</a>
+                <a href="/#analytics">Analytics</a>
+                <a href="/#ai-insights">AI Insights</a>
+                <a href="/placement">Placement</a>
+            </nav>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <!-- HEADER -->
+            <header class="dashboard-header">
+                <div>
+                    <h1>Student Analytics Dashboard</h1>
+                    <p>AI-powered student success platform</p>
+                </div>
+
+                <div class="dashboard-user">
+
+                    {% if session.get('role') == 'admin' %}
+                    <a
+                        class="manage-button"
+                        href="{{ url_for('manage_accounts') }}"
+                    >
+                        Manage Accounts
+                    </a>
+                    {% endif %}
+
+                    <span>
+                        Welcome, {{ session.get('username', 'User') }}
+                        ({{ session.get('role', 'user')|title }})
+                    </span>
+
+                    <a
+                        class="logout-button"
+                        href="{{ url_for('logout') }}"
+                    >
+                        Logout
+                    </a>
+                </div>
+            </header>
+
+            <!-- STATISTICS -->
+            <section class="stats" aria-label="Student statistics">
+                <div class="card">
+                    <h3>Total Students</h3>
+                    <p id="totalStudents">0</p>
+                </div>
+
+                <div class="card">
+                    <h3>At Risk</h3>
+                    <p id="atRisk">0</p>
+                </div>
+
+                <div class="card">
+                    <h3>Improving</h3>
+                    <p id="improving">0</p>
+                </div>
+
+                <div class="card">
+                    <h3>Success Rate</h3>
+                    <p id="successRate">0%</p>
+                </div>
+            </section>
+
+            <!-- PERFORMANCE CHART -->
+            <section
+                class="chart-section"
+                id="analytics"
+                aria-labelledby="chartTitle"
+            >
+                <div class="section-heading">
+                    <div>
+                        <h2 id="chartTitle">Student Performance Trend</h2>
+                        <p>Overview of student performance</p>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas
+                        id="performanceChart"
+                        role="img"
+                        aria-label="Student performance chart"
+                    ></canvas>
+                </div>
+            </section>
+
+            <!-- AI INSIGHTS -->
+            <section class="ai-section" id="ai-insights">
+                <h2>AI Insights</h2>
+
+                <div class="insight">
+                    <h3>Students requiring attention</h3>
+
+                    <p id="aiInsight" aria-live="polite">
+                        Analyzing student data...
+                    </p>
+                </div>
+            </section>
+
+            <!-- STUDENT ANALYTICS TABLE -->
+            <section class="students-section" id="students">
+                <div class="section-heading">
+                    <div>
+                        <h2>Student AI Analysis</h2>
+                        <p>
+                            Attendance, scores and predicted risk levels.
+                            Click a student to open their profile.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="studentAnalyticsTable">
+                        <thead>
+                            <tr>
+                                <th scope="col">Student</th>
+                                <th scope="col">Attendance</th>
+                                <th scope="col">Score</th>
+                                <th scope="col">Risk</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="studentTableBody">
+                            <tr>
+                                <td colspan="4">Loading students...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- HAMBURGER MENU JAVASCRIPT -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const menuToggle =
+                document.getElementById("menuToggle");
+
+            const dashboard =
+                document.querySelector(".dashboard");
+
+            const sidebar =
+                document.getElementById("dashboardSidebar");
+
+            if (!menuToggle || !dashboard || !sidebar) {
+                return;
+            }
+
+            menuToggle.addEventListener("click", function () {
+                dashboard.classList.toggle("menu-collapsed");
+
+                const isOpen =
+                    !dashboard.classList.contains("menu-collapsed");
+
+                menuToggle.setAttribute(
+                    "aria-expanded",
+                    String(isOpen)
+                );
+
+                menuToggle.setAttribute(
+                    "aria-label",
+                    isOpen ? "Close menu" : "Open menu"
+                );
+            });
+        });
+    </script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Existing Dashboard JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+    <!-- STUDENT PROFILE NAVIGATION -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const tableBody =
+                document.getElementById("studentTableBody");
+
+            if (!tableBody) return;
+
+            function makeRowsClickable() {
+                tableBody.querySelectorAll("tr").forEach(function (row) {
+                    if (row.dataset.profileHandler === "true") {
+                        return;
+                    }
+
+                    const cells = row.querySelectorAll("td");
+
+                    // Ignore loading, empty and error rows.
+                    if (cells.length < 4) return;
+
+                    // app.js must supply the actual student ID.
+                    const studentId = row.dataset.studentId;
+
+                    if (!studentId) return;
+
+                    row.dataset.profileHandler = "true";
+                    row.classList.add("student-row");
+                    row.tabIndex = 0;
+                    row.setAttribute("role", "link");
+                    row.setAttribute(
+                        "aria-label",
+                        "Open student profile"
+                    );
+
+                    function openProfile() {
+                        window.location.href =
+                            "/student/" +
+                            encodeURIComponent(studentId);
+                    }
+
+                    row.addEventListener("click", openProfile);
+
+                    row.addEventListener("keydown", function (event) {
+                        if (
+                            event.key === "Enter" ||
+                            event.key === " "
+                        ) {
+                            event.preventDefault();
+                            openProfile();
+                        }
+                    });
+                });
+            }
+
+            // Watch for rows inserted dynamically by app.js.
+            const observer = new MutationObserver(makeRowsClickable);
+
+            observer.observe(tableBody, {
+                childList: true,
+                subtree: true
+            });
+
+            makeRowsClickable();
+        });
+    </script>
+
+</body>
+</html>

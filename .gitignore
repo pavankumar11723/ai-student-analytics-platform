@@ -1,0 +1,17 @@
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Secret files
+.env
+.env.*
+!.env.example
+
+# Editor settings
+.vscode/

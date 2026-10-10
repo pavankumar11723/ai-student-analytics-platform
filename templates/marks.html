@@ -1,0 +1,829 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marks & Assessments | Student Analytics</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        header {
+            background: #1e3a8a;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        header h1 { margin: 0 0 6px; font-size: 25px; }
+        header p { margin: 0; color: #dbeafe; }
+
+        .header-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-links a {
+            text-decoration: none;
+            color: white;
+            padding: 10px 14px;
+            border-radius: 6px;
+            background: #334155;
+        }
+
+        .header-links .logout { background: #dc2626; }
+
+        .container {
+            max-width: 1250px;
+            margin: 28px auto;
+            padding: 0 20px;
+        }
+
+        .intro { margin-bottom: 25px; }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+
+        .card, .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 22px;
+            box-shadow: 0 3px 12px #0000000d;
+        }
+
+        .card h3 {
+            font-size: 14px;
+            color: #64748b;
+            margin: 0 0 12px;
+        }
+
+        .number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1d4ed8;
+            margin: 0;
+        }
+
+        .panel { margin-bottom: 24px; }
+
+        .panel h2 {
+            margin: 0 0 18px;
+            font-size: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: white;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: 2px solid #93c5fd;
+            border-color: #2563eb;
+        }
+
+        button {
+            border: none;
+            border-radius: 6px;
+            padding: 11px 17px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            background: #2563eb;
+            color: white;
+        }
+
+        button:hover { background: #1d4ed8; }
+        button:disabled { opacity: .6; cursor: not-allowed; }
+
+        .secondary { background: #475569; }
+        .secondary:hover { background: #334155; }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+
+        .message {
+            padding: 13px 15px;
+            margin-bottom: 20px;
+            border-radius: 7px;
+            background: white;
+            display: none;
+            line-height: 1.5;
+        }
+
+        .message.success {
+            display: block;
+            color: #166534;
+            background: #dcfce7;
+        }
+
+        .message.error {
+            display: block;
+            color: #991b1b;
+            background: #fee2e2;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        th { background: #dbeafe; }
+
+        .marks-input {
+            width: 110px;
+            padding: 9px;
+        }
+
+        .muted { color: #64748b; font-size: 13px; }
+
+        .empty {
+            padding: 22px;
+            text-align: center;
+            color: #64748b;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 20px;
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 12px;
+        }
+
+        @media (max-width: 600px) {
+            header { padding: 18px; }
+            .container { padding: 0 12px; }
+            .panel { padding: 16px; }
+            th, td { padding: 10px; font-size: 13px; }
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <div>
+        <h1>Marks &amp; Assessment Management</h1>
+        <p>AI Student Analytics Platform</p>
+    </div>
+
+    <div class="header-links">
+      
+<a href="{{ url_for('index') }}">Dashboard</a>
+        <a class="logout" href="{{ url_for('logout') }}">Logout</a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="intro">
+        <h2>Assessment Center</h2>
+        <p>Create assessments, record student marks, and review academic results.</p>
+    </div>
+
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+
+    <section class="cards">
+        <div class="card">
+            <h3>Total Assessments</h3>
+            <p class="number" id="assessmentCount">0</p>
+        </div>
+        <div class="card">
+            <h3>Total Students</h3>
+            <p class="number" id="studentCount">0</p>
+        </div>
+        <div class="card">
+            <h3>Selected Assessment</h3>
+            <p class="number" id="maximumMarks">--</p>
+        </div>
+        <div class="card">
+            <h3>Marks Entered</h3>
+            <p class="number" id="marksEntered">0</p>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Create Assessment</h2>
+
+        <form id="assessmentForm">
+            <div class="form-grid">
+                <div>
+                    <label for="assessmentName">Assessment Name</label>
+                    <input id="assessmentName" required
+                           placeholder="e.g. Internal Assessment 1">
+                </div>
+
+                <div>
+                    <label for="academicYear">Academic Year</label>
+                    <input id="academicYear" required
+                           placeholder="e.g. 2026-2027">
+                </div>
+
+                <div>
+                    <label for="semester">Semester</label>
+                    <select id="semester" required>
+                        <option value="">Select semester</option>
+                        <option value="1">Semester 1</option>
+                        <option value="2">Semester 2</option>
+                        <option value="3">Semester 3</option>
+                        <option value="4">Semester 4</option>
+                        <option value="5">Semester 5</option>
+                        <option value="6">Semester 6</option>
+                        <option value="7">Semester 7</option>
+                        <option value="8">Semester 8</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="assessmentType">Assessment Type</label>
+                    <select id="assessmentType" required>
+                        <option value="Internal">Internal</option>
+                        <option value="Semester">Semester</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="subject">Subject</label>
+                    <input id="subject" required
+                           placeholder="e.g. DBMS">
+                </div>
+
+                <div>
+                    <label for="maxMarks">Maximum Marks</label>
+                    <input id="maxMarks" type="number" min="0.01"
+                           step="any" required placeholder="e.g. 30">
+                </div>
+
+                <div>
+                    <label for="assessmentDate">Assessment Date</label>
+                    <input id="assessmentDate" type="date" required>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button type="submit" id="createButton">Create Assessment</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2>Enter Student Marks</h2>
+
+        <div class="form-grid">
+            <div>
+                <label for="assessmentSelect">Select Assessment</label>
+                <select id="assessmentSelect">
+                    <option value="">Loading assessments...</option>
+                </select>
+            </div>
+        </div>
+
+        <p id="assessmentInfo" class="muted">
+            Select an assessment to load student records.
+        </p>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Marks Obtained</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody id="marksTable">
+                    <tr><td colspan="4" class="empty">
+                        Select an assessment to begin.
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions">
+            <button id="saveMarksButton" type="button" disabled>
+                Save Marks
+            </button>
+            <button id="reloadMarksButton" class="secondary" type="button">
+                Reload Marks
+            </button>
+        </div>
+        <p class="muted">
+            Leave a mark blank if it has not been entered yet.
+            Saving updates existing marks for students with entered values.
+        </p>
+    </section>
+
+    <section class="panel">
+        <h2>Subject-wise Results</h2>
+
+        <div class="form-grid">
+            <div>
+                <label for="filterSubject">Filter by Subject</label>
+                <input id="filterSubject" placeholder="Optional subject name">
+            </div>
+            <div>
+                <label for="filterSemester">Filter by Semester</label>
+                <select id="filterSemester">
+                    <option value="">All semesters</option>
+                    <option value="1">Semester 1</option>
+                    <option value="2">Semester 2</option>
+                    <option value="3">Semester 3</option>
+                    <option value="4">Semester 4</option>
+                    <option value="5">Semester 5</option>
+                    <option value="6">Semester 6</option>
+                    <option value="7">Semester 7</option>
+                    <option value="8">Semester 8</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="filterButton" type="button">Apply Filters</button>
+            <button id="clearFilterButton" class="secondary" type="button">
+                Clear Filters
+            </button>
+        </div>
+
+        <div class="table-wrapper" style="margin-top: 18px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student</th>
+                        <th>Subject</th>
+                        <th>Semester</th>
+                        <th>Assessment</th>
+                        <th>Marks</th>
+                        <th>Maximum</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsTable">
+                    <tr><td colspan="8" class="empty">Loading results...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<script>
+    const messageBox = document.getElementById("message");
+    const assessmentSelect = document.getElementById("assessmentSelect");
+    const marksTable = document.getElementById("marksTable");
+    const saveButton = document.getElementById("saveMarksButton");
+
+    let assessments = [];
+    let currentStudents = [];
+    let currentAssessment = null;
+
+    function showMessage(message, type = "success") {
+        messageBox.textContent = message;
+        messageBox.className = "message " + type;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function clearMessage() {
+        messageBox.textContent = "";
+        messageBox.className = "message";
+    }
+
+    async function apiRequest(url, options = {}) {
+        const response = await fetch(url, options);
+
+        let data;
+        try {
+            data = await response.json();
+        } catch {
+            throw new Error("The server returned an invalid response.");
+        }
+
+        if (!response.ok) {
+            throw new Error(data.error || "Request failed.");
+        }
+
+        return data;
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, char => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[char]);
+    }
+
+    
+async function loadStudentCount() {
+    const data = await apiRequest("/api/students");
+
+    // The /api/students endpoint returns an array.
+    document.getElementById("studentCount").textContent =
+        Array.isArray(data) ? data.length : 0;
+}
+    async function loadAssessments(preferredId = null) {
+        const data = await apiRequest("/api/assessments");
+        assessments = data.assessments || [];
+
+        document.getElementById("assessmentCount").textContent =
+            assessments.length;
+
+        assessmentSelect.replaceChildren();
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = assessments.length
+            ? "Select an assessment"
+            : "No assessments created yet";
+        assessmentSelect.appendChild(placeholder);
+
+        assessments.forEach(assessment => {
+            const option = document.createElement("option");
+            option.value = assessment.id;
+            option.textContent =
+                `${assessment.name} — ${assessment.subject} — Sem ${assessment.semester}`;
+            assessmentSelect.appendChild(option);
+        });
+
+        if (preferredId) {
+            assessmentSelect.value = String(preferredId);
+        }
+
+        if (assessmentSelect.value) {
+            await loadMarks();
+        } else {
+            currentAssessment = null;
+            currentStudents = [];
+            saveButton.disabled = true;
+            document.getElementById("maximumMarks").textContent = "--";
+            document.getElementById("marksEntered").textContent = "0";
+            marksTable.innerHTML =
+                '<tr><td colspan="4" class="empty">Select an assessment to begin.</td></tr>';
+        }
+    }
+
+    async function loadMarks() {
+        clearMessage();
+
+        const assessmentId = assessmentSelect.value;
+
+        if (!assessmentId) {
+            currentAssessment = null;
+            currentStudents = [];
+            saveButton.disabled = true;
+            return;
+        }
+
+        saveButton.disabled = true;
+        marksTable.innerHTML =
+            '<tr><td colspan="4" class="empty">Loading student marks...</td></tr>';
+
+        try {
+            const data = await apiRequest(
+                `/api/assessments/${assessmentId}/marks`
+            );
+
+            currentAssessment = data.assessment;
+            currentStudents = data.students || [];
+
+            document.getElementById("studentCount").textContent =
+                currentStudents.length;
+            document.getElementById("maximumMarks").textContent =
+                currentAssessment.max_marks;
+
+            document.getElementById("assessmentInfo").textContent =
+                `${currentAssessment.name} | ${currentAssessment.subject} | ` +
+                `Semester ${currentAssessment.semester} | Maximum: ` +
+                `${currentAssessment.max_marks} marks`;
+
+            renderMarksTable();
+            saveButton.disabled = false;
+
+        } catch (error) {
+            marksTable.innerHTML =
+                `<tr><td colspan="4" class="empty">${escapeHtml(error.message)}</td></tr>`;
+            showMessage(error.message, "error");
+        }
+    }
+
+    function renderMarksTable() {
+        marksTable.replaceChildren();
+
+        if (currentStudents.length === 0) {
+            marksTable.innerHTML =
+                '<tr><td colspan="4" class="empty">No students found.</td></tr>';
+            updateEnteredCount();
+            return;
+        }
+
+        currentStudents.forEach(student => {
+            const row = document.createElement("tr");
+            const markCell = document.createElement("td");
+            const percentageCell = document.createElement("td");
+            const input = document.createElement("input");
+
+            input.type = "number";
+            input.min = "0";
+            input.max = currentAssessment.max_marks;
+            input.step = "any";
+            input.className = "marks-input";
+            input.placeholder = "Not entered";
+            input.value = student.marks_obtained ?? "";
+            input.dataset.studentId = student.student_id;
+            input.setAttribute(
+                "aria-label",
+                `Marks for ${student.name}`
+            );
+
+            input.addEventListener("input", () => {
+                const value = input.value.trim();
+
+                if (value === "") {
+                    percentageCell.textContent = "--";
+                } else {
+                    const marks = Number(value);
+                    percentageCell.textContent =
+                        Number.isFinite(marks)
+                        ? (marks / Number(currentAssessment.max_marks) * 100)
+                            .toFixed(2) + "%"
+                        : "--";
+                }
+
+                updateEnteredCount();
+            });
+
+            markCell.appendChild(input);
+
+            const marks = student.marks_obtained;
+            percentageCell.textContent =
+                marks === null || marks === undefined
+                ? "--"
+                : (Number(marks) / Number(currentAssessment.max_marks) * 100)
+                    .toFixed(2) + "%";
+
+            row.innerHTML =
+                `<td>${escapeHtml(student.student_id)}</td>` +
+                `<td>${escapeHtml(student.name)}</td>`;
+
+            row.appendChild(markCell);
+            row.appendChild(percentageCell);
+            marksTable.appendChild(row);
+        });
+
+        updateEnteredCount();
+    }
+
+    function updateEnteredCount() {
+        const inputs = marksTable.querySelectorAll(".marks-input");
+        const count = Array.from(inputs).filter(
+            input => input.value.trim() !== ""
+        ).length;
+
+        document.getElementById("marksEntered").textContent = count;
+    }
+
+    document.getElementById("assessmentForm")
+        .addEventListener("submit", async event => {
+            event.preventDefault();
+            clearMessage();
+
+            const button = document.getElementById("createButton");
+            button.disabled = true;
+
+            const assessment = {
+                name: document.getElementById("assessmentName").value.trim(),
+                academic_year: document.getElementById("academicYear").value.trim(),
+                semester: document.getElementById("semester").value,
+                assessment_type: document.getElementById("assessmentType").value,
+                subject: document.getElementById("subject").value.trim(),
+                max_marks: document.getElementById("maxMarks").value,
+                assessment_date: document.getElementById("assessmentDate").value
+            };
+
+            try {
+                const data = await apiRequest("/api/assessments", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(assessment)
+                });
+
+                document.getElementById("assessmentForm").reset();
+                document.getElementById("assessmentDate").value =
+                    new Date().toLocaleDateString("en-CA");
+
+                await loadAssessments(data.assessment.id);
+                showMessage("Assessment created successfully.");
+            } catch (error) {
+                showMessage(error.message, "error");
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+    saveButton.addEventListener("click", async () => {
+        if (!currentAssessment) {
+            showMessage("Select an assessment first.", "error");
+            return;
+        }
+
+        clearMessage();
+        saveButton.disabled = true;
+
+        const inputs = marksTable.querySelectorAll(".marks-input");
+        const records = [];
+
+        for (const input of inputs) {
+            const value = input.value.trim();
+
+            // Leave blank entries untouched.
+            if (value === "") continue;
+
+            const marks = Number(value);
+            const maximum = Number(currentAssessment.max_marks);
+
+            if (!Number.isFinite(marks) || marks < 0 || marks > maximum) {
+                showMessage(
+                    `Enter marks between 0 and ${maximum} for every filled field.`,
+                    "error"
+                );
+                saveButton.disabled = false;
+                return;
+            }
+
+            records.push({
+                student_id: Number(input.dataset.studentId),
+                marks_obtained: marks
+            });
+        }
+
+        if (records.length === 0) {
+            showMessage("Enter at least one mark before saving.", "error");
+            saveButton.disabled = false;
+            return;
+        }
+
+        try {
+            const data = await apiRequest(
+                `/api/assessments/${currentAssessment.id}/marks`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ records })
+                }
+            );
+
+            await loadMarks();
+            await loadResults();
+
+            showMessage(
+                `${data.message} ${data.saved_count} student mark(s) saved.`
+            );
+        } catch (error) {
+            showMessage(error.message, "error");
+        } finally {
+            saveButton.disabled = false;
+        }
+    });
+
+    document.getElementById("reloadMarksButton")
+        .addEventListener("click", loadMarks);
+
+    assessmentSelect.addEventListener("change", loadMarks);
+
+    async function loadResults() {
+        const params = new URLSearchParams();
+        const subject = document.getElementById("filterSubject").value.trim();
+        const semester = document.getElementById("filterSemester").value;
+
+        if (subject) params.set("subject", subject);
+        if (semester) params.set("semester", semester);
+
+        const table = document.getElementById("resultsTable");
+        table.innerHTML =
+            '<tr><td colspan="8" class="empty">Loading results...</td></tr>';
+
+        try {
+            const data = await apiRequest(
+                "/api/marks/subject-wise?" + params.toString()
+            );
+
+            table.replaceChildren();
+
+            const results = data.results || [];
+
+            if (!results.length) {
+                table.innerHTML =
+                    '<tr><td colspan="8" class="empty">No results match these filters.</td></tr>';
+                return;
+            }
+
+            results.forEach(result => {
+                const row = document.createElement("tr");
+
+                const values = [
+                    result.student_id,
+                    result.student_name,
+                    result.subject,
+                    result.semester,
+                    result.assessment_name,
+                    result.marks_obtained ?? "Not entered",
+                    result.max_marks,
+                    result.percentage == null
+                        ? "--"
+                        : result.percentage + "%"
+                ];
+
+                values.forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value ?? "";
+                    row.appendChild(cell);
+                });
+
+                table.appendChild(row);
+            });
+        } catch (error) {
+            table.innerHTML =
+                `<tr><td colspan="8" class="empty">${escapeHtml(error.message)}</td></tr>`;
+        }
+    }
+
+    document.getElementById("filterButton")
+        .addEventListener("click", loadResults);
+
+    document.getElementById("clearFilterButton")
+        .addEventListener("click", async () => {
+            document.getElementById("filterSubject").value = "";
+            document.getElementById("filterSemester").value = "";
+            await loadResults();
+        });
+
+   
+async function initializePage() {
+    document.getElementById("assessmentDate").value =
+        new Date().toISOString().slice(0, 10);
+
+    try {
+        await loadStudentCount();
+        await loadAssessments();
+        await loadResults();
+    } catch (error) {
+        showMessage(error.message, "error");
+    }
+}
+
+initializePage();
+</script>
+</body>
+</html>

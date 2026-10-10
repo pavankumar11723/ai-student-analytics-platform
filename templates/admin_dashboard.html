@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Student Analytics</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f5f9;
+            color: #1f2937;
+        }
+
+        header {
+            background: #172554;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        header a {
+            color: white;
+            text-decoration: none;
+            background: #dc2626;
+            padding: 10px 16px;
+            border-radius: 6px;
+        }
+
+        header a:hover {
+            background: #b91c1c;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+        }
+
+        .card, .panel {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px #0000000d;
+        }
+
+        .card h3 {
+            margin: 0 0 12px;
+            color: #64748b;
+            font-size: 15px;
+        }
+
+        .value {
+            font-size: 30px;
+            font-weight: bold;
+            color: #1d4ed8;
+        }
+
+        .panel {
+            margin-top: 24px;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            font-size: 20px;
+        }
+
+        #ai-insight {
+            line-height: 1.6;
+        }
+
+        .error {
+            color: #b91c1c;
+        }
+
+        /* Dashboard navigation */
+        nav {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+        }
+
+        nav a {
+            display: inline-block;
+            background: white;
+            padding: 14px 18px;
+            border-radius: 8px;
+            color: #1d4ed8;
+            text-decoration: none;
+            border: 1px solid #e2e8f0;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        nav a:hover {
+            background: #dbeafe;
+            border-color: #93c5fd;
+            transform: translateY(-2px);
+        }
+
+        nav a.accounts-button {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        nav a.accounts-button:hover {
+            background: #1d4ed8;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background: #eff6ff;
+        }
+
+        .risk-high {
+            color: #dc2626;
+            font-weight: bold;
+        }
+
+        .risk-medium {
+            color: #d97706;
+            font-weight: bold;
+        }
+
+        .risk-low {
+            color: #16a34a;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                padding: 18px;
+            }
+
+            main {
+                padding: 0 12px;
+            }
+
+            .card, .panel {
+                padding: 17px;
+            }
+
+            .value {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Admin Dashboard</h1>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </header>
+
+    <main>
+        <h2>Student Analytics Overview</h2>
+
+        <!-- Analytics cards -->
+        <div class="cards">
+
+            <div class="card">
+                <h3>Total Students</h3>
+                <div class="value" id="total-students">—</div>
+            </div>
+
+            <div class="card">
+                <h3>Average Attendance</h3>
+                <div class="value" id="average-attendance">—</div>
+            </div>
+
+            <div class="card">
+                <h3>Average Score</h3>
+                <div class="value" id="average-score">—</div>
+            </div>
+
+            <div class="card">
+                <h3>High-Risk Students</h3>
+                <div class="value" id="at-risk">—</div>
+            </div>
+
+        </div>
+
+        <!-- AI insights -->
+        <div class="panel">
+            <h2>AI Insight</h2>
+            <p id="ai-insight">Loading analytics...</p>
+        </div>
+
+        <!-- Student table -->
+        <div class="panel">
+            <h2>Students</h2>
+
+            <p id="student-status">Loading student records...</p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Attendance</th>
+                            <th>Score</th>
+                            <th>Predicted Risk</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="student-table">
+                        <tr>
+                            <td colspan="5">Loading students...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Navigation buttons -->
+        <div class="panel">
+            <h2>Dashboard Management</h2>
+            <p>Manage students, attendance, marks, and user accounts.</p>
+
+            <nav>
+                <a href="{{ url_for('index') }}">Student Analytics</a>
+
+                <a href="{{ url_for('attendance_page') }}">Attendance</a>
+
+                <a href="{{ url_for('marks_page') }}">
+                    Marks &amp; Assessments
+                </a>
+
+                <a class="accounts-button"
+                   href="{{ url_for('manage_accounts') }}">
+                    Manage Accounts
+                </a>
+            </nav>
+        </div>
+
+    </main>
+
+    <script>
+        async function loadDashboard() {
+            const status = document.getElementById("student-status");
+            const table = document.getElementById("student-table");
+
+            try {
+                const response = await fetch("/api/dashboard");
+
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                document.getElementById("total-students").textContent =
+                    data.total_students ?? 0;
+
+                document.getElementById("average-attendance").textContent =
+                    (data.average_attendance ?? 0) + "%";
+
+                document.getElementById("average-score").textContent =
+                    data.average_score ?? 0;
+
+                document.getElementById("at-risk").textContent =
+                    data.at_risk ?? 0;
+
+                document.getElementById("ai-insight").textContent =
+                    data.ai_insight || "No AI insights available.";
+
+                table.replaceChildren();
+
+                const students = data.students || [];
+
+                if (students.length === 0) {
+                    const row = document.createElement("tr");
+                    const cell = document.createElement("td");
+
+                    cell.colSpan = 5;
+                    cell.textContent = "No student records found.";
+
+                    row.appendChild(cell);
+                    table.appendChild(row);
+
+                    status.textContent = "No student records available.";
+                    return;
+                }
+
+                for (const student of students) {
+                    const row = document.createElement("tr");
+
+                    const risk =
+                        student.predicted_risk ?? student.risk ?? "N/A";
+
+                    const values = [
+                        student.id,
+                        student.name,
+                        student.attendance == null
+                            ? "N/A"
+                            : student.attendance + "%",
+                        student.score,
+                        risk
+                    ];
+
+                    values.forEach((value, index) => {
+                        const cell = document.createElement("td");
+                        cell.textContent = value ?? "N/A";
+
+                        if (index === 4) {
+                            const riskClass =
+                                String(risk).toLowerCase();
+
+                            if (["high", "medium", "low"].includes(riskClass)) {
+                                cell.classList.add("risk-" + riskClass);
+                            }
+                        }
+
+                        row.appendChild(cell);
+                    });
+
+                    table.appendChild(row);
+                }
+
+                status.textContent =
+                    students.length + " student record(s) loaded.";
+
+            } catch (error) {
+                status.textContent = "Unable to load student data.";
+                status.className = "error";
+
+                document.getElementById("ai-insight").textContent =
+                    "Unable to load AI insights.";
+
+                console.error("Dashboard error:", error);
+            }
+        }
+
+        loadDashboard();
+    </script>
+
+</body>
+</html>

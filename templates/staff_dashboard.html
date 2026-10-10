@@ -1,0 +1,462 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Staff Dashboard | Student Analytics</title>
+
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            html {
+                scroll-behavior: smooth;
+            }
+
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                background: #f1f5f9;
+                color: #1e293b;
+            }
+
+            header {
+                background: #1e3a8a;
+                color: white;
+                padding: 22px 30px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            header h1 {
+                margin: 0;
+                font-size: 25px;
+            }
+
+            header p {
+                margin-bottom: 0;
+                color: #dbeafe;
+            }
+
+            .logout {
+                background: #dc2626;
+                color: white;
+                text-decoration: none;
+                padding: 10px 16px;
+                border-radius: 6px;
+            }
+
+            .logout:hover {
+                background: #b91c1c;
+            }
+
+            .container {
+                max-width: 1200px;
+                margin: 30px auto;
+                padding: 0 20px;
+            }
+
+            .welcome {
+                margin-bottom: 25px;
+            }
+
+            .cards {
+                display: grid;
+                grid-template-columns: repeat(
+                    auto-fit,
+                    minmax(200px, 1fr)
+                );
+                gap: 18px;
+                margin-bottom: 30px;
+            }
+
+            .card {
+                background: white;
+                padding: 22px;
+                border-radius: 12px;
+                box-shadow: 0 3px 12px #0000000d;
+            }
+
+            .card h3 {
+                color: #64748b;
+                font-size: 15px;
+                margin-top: 0;
+            }
+
+            .number {
+                font-size: 30px;
+                font-weight: bold;
+                margin-bottom: 0;
+                color: #1d4ed8;
+            }
+
+            .section-title {
+                margin: 30px 0 15px;
+            }
+
+            .quick-links {
+                display: grid;
+                grid-template-columns: repeat(
+                    auto-fit,
+                    minmax(210px, 1fr)
+                );
+                gap: 18px;
+            }
+
+            .quick-link {
+                display: block;
+                padding: 22px;
+                background: white;
+                border-radius: 10px;
+                text-decoration: none;
+                color: #1e293b;
+                border: 1px solid #e2e8f0;
+                transition: 0.2s;
+            }
+
+            .quick-link:hover {
+                border-color: #2563eb;
+                transform: translateY(-2px);
+            }
+
+            .quick-link h3 {
+                margin-top: 0;
+                color: #1d4ed8;
+            }
+
+            .table-wrapper {
+                overflow-x: auto;
+                border-radius: 8px;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                background: white;
+            }
+
+            th, td {
+                padding: 14px;
+                text-align: left;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            th {
+                background: #dbeafe;
+            }
+
+            /* Clickable student rows */
+            #studentTable tr.student-row {
+                cursor: pointer;
+                transition: background-color 0.2s;
+            }
+
+            #studentTable tr.student-row:hover {
+                background-color: #eff6ff;
+            }
+
+            #studentTable tr.student-row:focus {
+                outline: 2px solid #2563eb;
+                outline-offset: -2px;
+            }
+
+            .risk {
+                font-weight: bold;
+            }
+
+            .high {
+                color: #dc2626;
+            }
+
+            .medium {
+                color: #d97706;
+            }
+
+            .low {
+                color: #16a34a;
+            }
+
+            .message {
+                padding: 15px;
+                background: white;
+                border-radius: 8px;
+                margin-bottom: 15px;
+            }
+
+            .profile-hint {
+                color: #64748b;
+                font-size: 13px;
+                margin-top: -5px;
+                margin-bottom: 15px;
+            }
+
+            /* Keep the Student Performance heading visible after scrolling */
+            #student-performance {
+                scroll-margin-top: 20px;
+            }
+
+            @media (max-width: 600px) {
+                header {
+                    padding: 20px;
+                }
+
+                .container {
+                    padding: 0 12px;
+                }
+
+                th, td {
+                    padding: 10px;
+                    font-size: 14px;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+
+    <header>
+        <div>
+            <h1>Staff Dashboard</h1>
+            <p>AI Student Analytics Platform</p>
+        </div>
+
+        <a class="logout" href="{{ url_for('logout') }}">Logout</a>
+    </header>
+
+    <div class="container">
+
+        <!-- WELCOME -->
+        <div class="welcome">
+            <h2>Welcome, {{ session.get('username', 'Staff') }}!</h2>
+            <p>Monitor student performance, attendance, and academic risk.</p>
+        </div>
+
+        <!-- STATISTICS -->
+        <div class="cards">
+            <div class="card">
+                <h3>Total Students</h3>
+                <p class="number" id="totalStudents">--</p>
+            </div>
+
+            <div class="card">
+                <h3>Average Attendance</h3>
+                <p class="number" id="averageAttendance">--</p>
+            </div>
+
+            <div class="card">
+                <h3>Average Score</h3>
+                <p class="number" id="averageScore">--</p>
+            </div>
+
+            <div class="card">
+                <h3>High-Risk Students</h3>
+                <p class="number" id="highRisk">--</p>
+            </div>
+        </div>
+
+        <!-- QUICK ACCESS -->
+        <h2 class="section-title">Quick Access</h2>
+
+        <div class="quick-links">
+
+            <!-- SCROLL TO STUDENT PERFORMANCE ON THIS SAME PAGE -->
+            <a class="quick-link" href="#student-performance">
+                <h3>Student Analytics</h3>
+                <p>Jump to the student performance table on this page.</p>
+            </a>
+
+            <a
+                class="quick-link"
+                href="{{ url_for('attendance_page') }}"
+            >
+                <h3>Attendance</h3>
+                <p>Open attendance management and reports.</p>
+            </a>
+
+            <a
+                class="quick-link"
+                href="{{ url_for('marks_page') }}"
+            >
+                <h3>Marks &amp; Assessments</h3>
+                <p>View assessment and marks pages.</p>
+            </a>
+
+            
+        <a class="quick-link" href="/placement">
+            <h3>Placement Analytics</h3>
+            <p>Manage student placement scores and readiness.</p>
+        </a>
+
+        </div>
+
+        <!-- STUDENT PERFORMANCE -->
+        <h2 class="section-title" id="student-performance">
+            Student Performance
+        </h2>
+
+        <div id="status" class="message">
+            Loading student data...
+        </div>
+
+        <p class="profile-hint">
+            Click any student's row to view their profile.
+        </p>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Attendance</th>
+                        <th>Score</th>
+                        <th>Risk Level</th>
+                        <th>Study Hours</th>
+                    </tr>
+                </thead>
+
+                <tbody id="studentTable">
+                    <tr>
+                        <td colspan="6">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- AI INSIGHT -->
+        <h2 class="section-title">AI Insight</h2>
+
+        <div class="card">
+            <p id="aiInsight">Loading AI insight...</p>
+        </div>
+
+    </div>
+
+    <script>
+        async function loadDashboard() {
+            const status = document.getElementById("status");
+            const table = document.getElementById("studentTable");
+
+            try {
+                const response = await fetch("/api/dashboard");
+
+                if (!response.ok) {
+                    throw new Error("Could not retrieve dashboard data.");
+                }
+
+                const data = await response.json();
+
+                document.getElementById("totalStudents").textContent =
+                    data.total_students ?? 0;
+
+                document.getElementById("averageAttendance").textContent =
+                    (data.average_attendance ?? 0) + "%";
+
+                document.getElementById("averageScore").textContent =
+                    data.average_score ?? 0;
+
+                document.getElementById("highRisk").textContent =
+                    data.at_risk ?? 0;
+
+                document.getElementById("aiInsight").textContent =
+                    data.ai_insight || "No AI insight is available.";
+
+                table.replaceChildren();
+
+                if (!data.students || data.students.length === 0) {
+                    table.innerHTML =
+                        '<tr><td colspan="6">No student records found.</td></tr>';
+
+                    status.textContent = "No student data available.";
+                    return;
+                }
+
+                data.students.forEach(student => {
+                    const row = document.createElement("tr");
+                    const studentId = student.id;
+
+                    row.classList.add("student-row");
+                    row.tabIndex = 0;
+                    row.setAttribute("role", "link");
+                    row.setAttribute(
+                        "aria-label",
+                        "View profile of " + (student.name ?? "student")
+                    );
+
+                    // Open the existing Flask student profile route.
+                    if (
+                        studentId !== undefined &&
+                        studentId !== null
+                    ) {
+                        const profileUrl =
+                            "/student/" + encodeURIComponent(studentId);
+
+                        row.addEventListener("click", () => {
+                            window.location.href = profileUrl;
+                        });
+
+                        row.addEventListener("keydown", event => {
+                            if (
+                                event.key === "Enter" ||
+                                event.key === " "
+                            ) {
+                                event.preventDefault();
+                                window.location.href = profileUrl;
+                            }
+                        });
+                    }
+
+                    const risk = String(student.risk || "Unknown");
+                    const riskClass = risk.toLowerCase();
+
+                    const values = [
+                        student.id,
+                        student.name,
+                        (student.attendance ?? 0) + "%",
+                        student.score ?? 0,
+                        risk,
+                        student.study_hours ?? 0
+                    ];
+
+                    values.forEach((value, index) => {
+                        const cell = document.createElement("td");
+                        cell.textContent = value ?? "";
+
+                        if (index === 4) {
+                            cell.className =
+                                "risk " +
+                                (
+                                    ["high", "medium", "low"].includes(riskClass)
+                                        ? riskClass
+                                        : ""
+                                );
+                        }
+
+                        row.appendChild(cell);
+                    });
+
+                    table.appendChild(row);
+                });
+
+                status.textContent = "Student data loaded successfully.";
+
+            } catch (error) {
+                status.textContent =
+                    "Unable to load student data. Check that Flask is running and /api/dashboard is working.";
+
+                table.innerHTML =
+                    '<tr><td colspan="6">Student data could not be loaded.</td></tr>';
+
+                console.error("Dashboard error:", error);
+            }
+        }
+
+        loadDashboard();
+    </script>
+
+    </body>
+    </html>
