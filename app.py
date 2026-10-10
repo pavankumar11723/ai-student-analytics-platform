@@ -138,6 +138,7 @@ def current_timestamp():
 
 # Database initialization
 
+
 # Database initialization
 def initialize_database():
     connection = get_connection()
@@ -148,20 +149,19 @@ def initialize_database():
             WHERE type = 'table' AND name = 'students'
         """).fetchone()
 
-       if table is None:
-    connection.execute("""
-        CREATE TABLE students (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            attendance INTEGER,
-            score INTEGER,
-            risk TEXT,
-            study_hours INTEGER DEFAULT 2,
-            performance_updated_at TEXT,
-            assignment REAL
-        )
-    """)
-    connection.commit()
+        if table is None:
+            connection.execute("""
+                CREATE TABLE students (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    attendance INTEGER,
+                    score INTEGER,
+                    risk TEXT,
+                    study_hours INTEGER DEFAULT 2,
+                    performance_updated_at TEXT,
+                    assignment REAL
+                )
+            """)
 
         columns = {
             row["name"]
@@ -178,7 +178,8 @@ def initialize_database():
 
         if "assignment" not in columns:
             connection.execute("""
-                ALTER TABLE students ADD COLUMN assignment REAL
+                ALTER TABLE students
+                ADD COLUMN assignment REAL
             """)
 
         connection.execute("""
@@ -281,8 +282,7 @@ def initialize_database():
             )
         """)
 
-        
-        # Placement analytics table
+        # Placement analytics
         connection.execute("""
             CREATE TABLE IF NOT EXISTS placement_records (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -312,7 +312,7 @@ def initialize_database():
             ON placement_records(student_id)
         """)
 
-        # NEW: Accounts for admin, staff, and students
+        # Accounts for admin, staff, and students
         connection.execute("""
             CREATE TABLE IF NOT EXISTS user_accounts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -337,7 +337,7 @@ def initialize_database():
         """)
 
         # Preserve existing progress snapshots.
-        # Add a baseline snapshot only for students without history.
+        # Add baseline history only for students without history.
         students = connection.execute("""
             SELECT id, attendance, score, study_hours
             FROM students
@@ -360,9 +360,9 @@ def initialize_database():
                     ) VALUES (?, ?, ?, ?, ?)
                 """, (
                     student["id"],
-                    student["attendance"],
-                    student["score"],
-                    student["study_hours"],
+                    student["attendance"] if student["attendance"] is not None else 0,
+                    student["score"] if student["score"] is not None else 0,
+                    student["study_hours"] if student["study_hours"] is not None else 2,
                     current_timestamp()
                 ))
 
@@ -378,6 +378,7 @@ def initialize_database():
     finally:
         connection.close()
 
+        
 # Check whether a user is logged in
 def login_required(view):
     @wraps(view)
