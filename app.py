@@ -378,7 +378,7 @@ def initialize_database():
     finally:
         connection.close()
 
-        
+
 # Check whether a user is logged in
 def login_required(view):
     @wraps(view)
@@ -439,6 +439,14 @@ def create_admin_account(username, password):
     finally:
         connection.close()
 
+# Create the Render admin account from environment variables
+import os
+
+admin_username = os.getenv("ADMIN_USERNAME")
+admin_password = os.getenv("ADMIN_PASSWORD")
+
+if admin_username and admin_password:
+    create_admin_account(admin_username, admin_password)
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
