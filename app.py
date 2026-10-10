@@ -149,10 +149,19 @@ def initialize_database():
         """).fetchone()
 
         if table is None:
-            raise RuntimeError(
-                "The students table was not found. "
-                "Create your existing database first."
-            )
+    connection.execute("""
+        CREATE TABLE students (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            attendance INTEGER,
+            score INTEGER,
+            risk TEXT,
+            study_hours INTEGER DEFAULT 2,
+            performance_updated_at TEXT,
+            assignment REAL
+        )
+    """)
+    connection.commit()
 
         columns = {
             row["name"]
