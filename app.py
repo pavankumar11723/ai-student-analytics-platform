@@ -2691,8 +2691,9 @@ def placement_page():
     finally:
         connection.close()
 
+initialize_database()
 if __name__ == "__main__":
-    initialize_database()
+    
 
     connection = get_connection()
     admin_exists = connection.execute(
