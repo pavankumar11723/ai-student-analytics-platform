@@ -148,7 +148,7 @@ def initialize_database():
             WHERE type = 'table' AND name = 'students'
         """).fetchone()
 
-        if table is None:
+       if table is None:
     connection.execute("""
         CREATE TABLE students (
             id INTEGER PRIMARY KEY,
