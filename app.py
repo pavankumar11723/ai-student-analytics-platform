@@ -1,3 +1,4 @@
+from psycopg2 import IntegrityError
 from flask import (
     Flask, render_template, jsonify, request,
     session, redirect, url_for, flash
@@ -5,7 +6,8 @@ from flask import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import os
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import math
 from datetime import datetime, timedelta, date
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -124,13 +126,42 @@ model = DecisionTreeClassifier(random_state=42)
 model.fit(X, y)
 
 # Database connection
-def get_connection():
-    connection = sqlite3.connect(DATABASE, timeout=30)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA busy_timeout = 30000")
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
 
+class PostgreSQLConnection:
+    def __init__(self, connection):
+        self.connection = connection
+
+    def execute(self, query, params=None):
+        # Translate common SQLite placeholders for PostgreSQL.
+        query = query.replace("?", "%s")
+        cursor = self.connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(query, params or ())
+        return cursor
+
+    def cursor(self):
+        return self.connection.cursor(cursor_factory=RealDictCursor)
+
+    def commit(self):
+        self.connection.commit()
+
+    def rollback(self):
+        self.connection.rollback()
+
+    def close(self):
+        self.connection.close()
+
+def get_connection():
+    database_url = os.environ.get("DATABASE_URL")
+
+    if not database_url:
+        raise RuntimeError("DATABASE_URL environment variable is required")
+
+    raw_connection = psycopg2.connect(
+        database_url,
+        connect_timeout=15
+    )
+    raw_connection.autocommit = False
+    return PostgreSQLConnection(raw_connection)
 
 def current_timestamp():
     return datetime.now().isoformat(sep=" ", timespec="microseconds")
@@ -140,236 +171,46 @@ def current_timestamp():
 
 
 # Database initialization
+
 def initialize_database():
+    """Verify that the migrated PostgreSQL tables exist."""
     connection = get_connection()
 
+    required_tables = {
+        "students",
+        "student_progress",
+        "attendance_records",
+        "attendance_reports",
+        "attendance_report_students",
+        "assessments",
+        "student_marks",
+        "placement_records",
+        "user_accounts",
+        "interventions",
+    }
+
     try:
-        table = connection.execute("""
-            SELECT name FROM sqlite_master
-            WHERE type = 'table' AND name = 'students'
-        """).fetchone()
-
-        if table is None:
-            connection.execute("""
-                CREATE TABLE students (
-                    id INTEGER PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    attendance INTEGER,
-                    score INTEGER,
-                    risk TEXT,
-                    study_hours INTEGER DEFAULT 2,
-                    performance_updated_at TEXT,
-                    assignment REAL
-                )
+        with connection.cursor() as cursor:
+           
+            cursor.execute("""
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
             """)
 
-        columns = {
-            row["name"]
-            for row in connection.execute(
-                "PRAGMA table_info(students)"
-            ).fetchall()
-        }
+            existing_tables = {
+                row["table_name"] for row in cursor.fetchall()
+            }
+        missing_tables = required_tables - existing_tables
 
-        if "performance_updated_at" not in columns:
-            connection.execute("""
-                ALTER TABLE students
-                ADD COLUMN performance_updated_at TEXT
-            """)
-
-        if "assignment" not in columns:
-            connection.execute("""
-                ALTER TABLE students
-                ADD COLUMN assignment REAL
-            """)
-
-        connection.execute("""
-            UPDATE students
-            SET performance_updated_at = ?
-            WHERE performance_updated_at IS NULL
-        """, (current_timestamp(),))
-
-        # Student progress history
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS student_progress (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id INTEGER NOT NULL,
-                attendance REAL NOT NULL,
-                score REAL NOT NULL,
-                study_hours REAL NOT NULL,
-                recorded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES students(id)
+        if missing_tables:
+            raise RuntimeError(
+                "Missing PostgreSQL tables: "
+                + ", ".join(sorted(missing_tables))
             )
-        """)
-
-        connection.execute("""
-            CREATE INDEX IF NOT EXISTS idx_student_progress_student_date
-            ON student_progress(student_id, recorded_at)
-        """)
-
-        # Attendance records
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS attendance_records (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id INTEGER NOT NULL,
-                attendance_date TEXT NOT NULL,
-                status TEXT NOT NULL
-                    CHECK(status IN ('Present', 'Absent')),
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES students(id),
-                UNIQUE(student_id, attendance_date)
-            )
-        """)
-
-        # Attendance reports
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS attendance_reports (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                report_type TEXT NOT NULL
-                    CHECK(report_type IN ('fortnightly', 'monthly')),
-                period_number INTEGER NOT NULL,
-                period_start TEXT NOT NULL,
-                period_end TEXT NOT NULL,
-                generated_at TEXT NOT NULL,
-                UNIQUE(report_type, period_start, period_end)
-            )
-        """)
-
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS attendance_report_students (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                report_id INTEGER NOT NULL,
-                student_id INTEGER NOT NULL,
-                present_days INTEGER NOT NULL,
-                recorded_days INTEGER NOT NULL,
-                period_percentage REAL,
-                semester_present_days INTEGER NOT NULL,
-                semester_recorded_days INTEGER NOT NULL,
-                semester_percentage REAL,
-                FOREIGN KEY (report_id)
-                    REFERENCES attendance_reports(id),
-                FOREIGN KEY (student_id) REFERENCES students(id),
-                UNIQUE(report_id, student_id)
-            )
-        """)
-
-        # Marks management tables
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS assessments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                academic_year TEXT NOT NULL,
-                semester INTEGER NOT NULL
-                    CHECK(semester BETWEEN 1 AND 8),
-                assessment_type TEXT NOT NULL
-                    CHECK(assessment_type IN ('Internal', 'Semester')),
-                subject TEXT NOT NULL,
-                max_marks REAL NOT NULL CHECK(max_marks > 0),
-                assessment_date TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS student_marks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id INTEGER NOT NULL,
-                assessment_id INTEGER NOT NULL,
-                marks_obtained REAL NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES students(id),
-                FOREIGN KEY (assessment_id) REFERENCES assessments(id),
-                UNIQUE(student_id, assessment_id)
-            )
-        """)
-
-        # Placement analytics
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS placement_records (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id INTEGER NOT NULL UNIQUE,
-                aptitude_score REAL NOT NULL DEFAULT 0
-                    CHECK(aptitude_score BETWEEN 0 AND 100),
-                coding_score REAL NOT NULL DEFAULT 0
-                    CHECK(coding_score BETWEEN 0 AND 100),
-                communication_score REAL NOT NULL DEFAULT 0
-                    CHECK(communication_score BETWEEN 0 AND 100),
-                mock_interview_score REAL NOT NULL DEFAULT 0
-                    CHECK(mock_interview_score BETWEEN 0 AND 100),
-                placement_status TEXT NOT NULL DEFAULT 'Not Placed'
-                    CHECK(placement_status IN (
-                        'Not Placed', 'Placed', 'In Progress'
-                    )),
-                company_name TEXT,
-                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id)
-                    REFERENCES students(id)
-                    ON DELETE CASCADE
-            )
-        """)
-
-        connection.execute("""
-            CREATE INDEX IF NOT EXISTS idx_placement_student
-            ON placement_records(student_id)
-        """)
-
-        # Accounts for admin, staff, and students
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS user_accounts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL UNIQUE COLLATE NOCASE,
-                password_hash TEXT NOT NULL,
-                role TEXT NOT NULL
-                    CHECK(role IN ('admin', 'staff', 'student')),
-                student_id INTEGER UNIQUE,
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES students(id),
-                CHECK (
-                    (role = 'student' AND student_id IS NOT NULL)
-                    OR
-                    (role IN ('admin', 'staff') AND student_id IS NULL)
-                )
-            )
-        """)
-
-        connection.execute("""
-            CREATE INDEX IF NOT EXISTS idx_user_accounts_role
-            ON user_accounts(role)
-        """)
-
-        # Preserve existing progress snapshots.
-        # Add baseline history only for students without history.
-        students = connection.execute("""
-            SELECT id, attendance, score, study_hours
-            FROM students
-        """).fetchall()
-
-        for student in students:
-            existing = connection.execute("""
-                SELECT id FROM student_progress
-                WHERE student_id = ? LIMIT 1
-            """, (student["id"],)).fetchone()
-
-            if existing is None:
-                connection.execute("""
-                    INSERT INTO student_progress (
-                        student_id,
-                        attendance,
-                        score,
-                        study_hours,
-                        recorded_at
-                    ) VALUES (?, ?, ?, ?, ?)
-                """, (
-                    student["id"],
-                    student["attendance"] if student["attendance"] is not None else 0,
-                    student["score"] if student["score"] is not None else 0,
-                    student["study_hours"] if student["study_hours"] is not None else 2,
-                    current_timestamp()
-                ))
 
         connection.commit()
-        print("Database initialization completed.")
-        print("Existing student data has been preserved.")
-        print("User accounts table is ready.")
+        print("PostgreSQL database tables verified.")
 
     except Exception:
         connection.rollback()
@@ -432,7 +273,7 @@ def create_admin_account(username, password):
         connection.commit()
         print("Admin account created successfully.")
 
-    except sqlite3.IntegrityError:
+    except IntegrityError:
         connection.rollback()
         print("That username already exists. Choose another username.")
 
@@ -450,7 +291,7 @@ def login():
             user = connection.execute("""
                 SELECT id, username, password_hash, role, student_id
                 FROM user_accounts
-                WHERE username = ? COLLATE NOCASE
+               WHERE LOWER(username) = LOWER(%s)
             """, (username,)).fetchone()
         finally:
             connection.close()
@@ -557,7 +398,7 @@ def manage_accounts():
             connection.commit()
             flash(f"{role.title()} account created successfully.")
 
-        except sqlite3.IntegrityError:
+        except IntegrityError:
             connection.rollback()
             flash(
                 "Username already exists, or this student "
@@ -1007,6 +848,7 @@ def generate_attendance_reports():
                     period_end,
                     generated_at
                 ) VALUES (?, ?, ?, ?, ?)
+                RETURNING id
             """, (
                 period["report_type"],
                 period["period_number"],
@@ -1015,7 +857,8 @@ def generate_attendance_reports():
                 current_timestamp()
             ))
 
-            report_id = cursor.lastrowid
+            report_id = cursor.fetchone()["id"]
+
 
             for student in students:
                 period_stats = attendance_stats(
@@ -1553,7 +1396,12 @@ def interventions_api(student_id):
             columns = {
                 row["name"]
                 for row in connection.execute(
-                    "PRAGMA table_info(interventions)"
+                    """
+SELECT column_name AS name
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'interventions'
+"""
                 ).fetchall()
             }
 
@@ -1581,7 +1429,12 @@ def interventions_api(student_id):
         columns = {
             row["name"]
             for row in connection.execute(
-                "PRAGMA table_info(interventions)"
+               """
+SELECT column_name AS name
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'interventions'
+"""
             ).fetchall()
         }
 
@@ -1618,17 +1471,19 @@ def interventions_api(student_id):
         query_fields = ", ".join(fields)
         placeholders = ", ".join("?" for _ in fields)
 
+        
         cursor = connection.execute(
             f"INSERT INTO interventions ({query_fields}) "
-            f"VALUES ({placeholders})",
+            f"VALUES ({placeholders}) RETURNING id",
             tuple(data[field] for field in fields)
         )
 
+        intervention_id = cursor.fetchone()["id"]
         connection.commit()
 
         return jsonify({
             "message": "Intervention created successfully.",
-            "id": cursor.lastrowid
+            "id": intervention_id
         }), 201
 
     except Exception as error:
@@ -1656,8 +1511,13 @@ def update_intervention(intervention_id):
     try:
         columns = {
             row["name"]
-            for row in connection.execute(
-                "PRAGMA table_info(interventions)"
+            for row in connection.execute("""
+SELECT column_name AS name
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'interventions'
+"""
+                
             ).fetchall()
         }
 
@@ -2112,6 +1972,7 @@ def create_assessment():
                 max_marks,
                 assessment_date
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            RETURNING id
         """, (
             name,
             academic_year,
@@ -2122,11 +1983,10 @@ def create_assessment():
             assessment_date
         ))
 
+        assessment_id = cursor.fetchone()["id"]
         connection.commit()
 
-        created = get_assessment(
-            connection, cursor.lastrowid
-        )
+        created = get_assessment(connection, assessment_id)
 
         return jsonify({
             "message": "Assessment created successfully.",
